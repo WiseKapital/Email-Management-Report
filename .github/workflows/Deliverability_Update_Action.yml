@@ -62,5 +62,5 @@ jobs:
               FECHA=$(TZ='America/Bogota' date -d 'yesterday' +%Y-%m-%d)
             fi
             echo "Limpiando logs en GoDaddy hasta $FECHA..."
-            curl -fsS "${GODADDY_WEBHOOK_URL}${SEP}borrar=${FECHA}"
+            curl -fsS -4 --http1.1 --connect-timeout 10 --max-time 20 -A "Mozilla/5.0" "${GODADDY_WEBHOOK_URL}${SEP}borrar=${FECHA}" || echo "Aviso: GoDaddy no respondio"
           fi
