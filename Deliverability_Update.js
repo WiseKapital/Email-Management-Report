@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 let geoip = null;
 try { geoip = require('geoip-lite'); } catch { geoip = null; }
 
@@ -207,11 +210,17 @@ async function obtenerEstadosGoDaddy(urlBase, fechaStr) {
     if (!urlBase || !urlBase.startsWith('http') || !geoip) return porCuenta;
 
     const sep = urlBase.includes('?') ? '&' : '?';
-    const res = await fetch(`${urlBase}${sep}fecha=${fechaStr}`);
-    if (!res.ok) return porCuenta;
+    const res = await fetch(`${urlBase}${sep}fecha=${fechaStr}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(15000)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const json = await res.json();
-    for (const c of (json.clics || [])) {
+    const clics = json.clics || [];
+    console.log(`GoDaddy clics encontrados para ${fechaStr}: ${clics.length}`);
+
+    for (const c of clics) {
         if (c.fecha !== fechaStr || !c.ip || Number(c.campaign_id || 0) === 0) continue;
         const geo = geoip.lookup(c.ip);
         if (geo && geo.country === 'US' && geo.region) {
@@ -266,7 +275,8 @@ async function main() {
     const [anioNum, mesNum, diaNum] = fechaStr.split('-').map(Number);
     const fechaCorta = `${MESES_CORTOS[mesNum - 1]}-${diaNum}`;
 
-    const gd = await obtenerEstadosGoDaddy(process.env.GODADDY_WEBHOOK_URL, fechaStr).catch(() => ({}));
+    const gd = await obtenerEstadosGoDaddy(process.env.GODADDY_WEBHOOK_URL, fechaStr)
+        .catch(e => { console.error('GoDaddy:', e.message); return {}; });
 
     const mlj1 = (process.env.MJ_KEY_1 && process.env.MJ_SECRET_1)
         ? await procesarMailjet(process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return nuevoMapaISPs(); })
