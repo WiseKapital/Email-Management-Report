@@ -1,4 +1,5 @@
 <?php
+// https://piratesweeps.com/mailjet_webhook.php
 $ARCHIVO_LOG = __DIR__ . '/clics_log.php';
 header('Content-Type: application/json; charset=utf-8');
 
