@@ -2,8 +2,10 @@ name: Deliverability_Update_Action
 
 on:
   schedule:
-    # Todos los días a las 5:23 AM hora Colombia (10:23 UTC)
-    - cron: '23 10 * * *'
+    # 3 intentos escalonados (3:17 AM, 5:37 AM y 7:43 AM hora Colombia)
+    - cron: '17 8 * * *'
+    - cron: '37 10 * * *'
+    - cron: '43 12 * * *'
   workflow_dispatch:
     inputs:
       fecha:
@@ -20,13 +22,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verificar si el CSV de ayer ya existe (solo en schedule)
+        id: check
+        if: github.event_name == 'schedule'
+        run: |
+          YEAR=$(TZ='America/Bogota' date -d 'yesterday' +%Y)
+          MONTH=$(LC_ALL=C TZ='America/Bogota' date -d 'yesterday' +%B | tr '[:upper:]' '[:lower:]')
+          DAY_PAD=$(TZ='America/Bogota' date -d 'yesterday' +%d)
+          DAY_RAW=$(TZ='America/Bogota' date -d 'yesterday' +%-d)
+          DIR="${YEAR}/maildata/maildata_${MONTH}"
+          if [ -f "${DIR}/${DAY_PAD}.csv" ] || [ -f "${DIR}/${DAY_RAW}.csv" ]; then
+            echo "CSV de ayer ya existe en ${DIR}, saltando intento extra."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != 'true'
         with:
           node-version: '20'
 
-      - run: npm install geoip-lite --no-save
+      - name: Instalar dependencias
+        if: steps.check.outputs.skip != 'true'
+        run: npm install geoip-lite --no-save
 
       - name: Generar CSV diario en carpeta año/maildata/maildata_mes
+        if: steps.check.outputs.skip != 'true'
         env:
           MJ_KEY_1: ${{ secrets.MLJ1 }}
           MJ_SECRET_1: ${{ secrets.MLJ1_SECRET }}
@@ -41,6 +63,7 @@ jobs:
         run: node Deliverability_Update.js
 
       - name: Guardar CSV en Git
+        if: steps.check.outputs.skip != 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -49,6 +72,7 @@ jobs:
           git push
 
       - name: Limpiar logs ya guardados en GoDaddy
+        if: steps.check.outputs.skip != 'true'
         env:
           GODADDY_WEBHOOK_URL: ${{ secrets.GODADDY_WEBHOOK_URL }}
         run: |
