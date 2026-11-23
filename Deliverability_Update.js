@@ -183,7 +183,7 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
     return porISP;
 }
 
-// =======================================================
+// =======================================================////////
 // 2. SENDGRID (solo AYER)
 // =======================================================
 async function procesarSendgrid(apiKey, fechaStr) {
