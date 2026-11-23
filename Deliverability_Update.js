@@ -63,20 +63,38 @@ function nuevoMapaISPs() {
     return mapa;
 }
 
+const esperar = (ms) => new Promise(r => setTimeout(r, ms));
+
 // =======================================================
-// 1. MAILJET (solo eventos/mensajes dentro de AYER)
+// 1. MAILJET (secuencial + reintentos ante 504/429)
 // =======================================================
+async function fetchMailjetPage(url, headers, intentos = 3) {
+    for (let i = 1; i <= intentos; i++) {
+        try {
+            const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+            if (res.ok) {
+                const raw = await res.text();
+                return JSON.parse(raw.replace(/:\s*(\d{16,})(?=[,\s}\]])/g, ':"$1"'));
+            }
+            if ([429, 500, 502, 503, 504].includes(res.status) && i < intentos) {
+                await esperar(i * 2000);
+                continue;
+            }
+            throw new Error(`Mailjet HTTP ${res.status} en ${url}`);
+        } catch (err) {
+            if (i === intentos) throw err;
+            await esperar(i * 2000);
+        }
+    }
+}
+
 async function fetchAllMailjet(urlBase, headers) {
     const todos = [];
     let offset = 0;
     const limit = 1000;
     while (true) {
         const sep = urlBase.includes('?') ? '&' : '?';
-        const res = await fetch(`${urlBase}${sep}Limit=${limit}&Offset=${offset}`, { headers });
-        if (!res.ok) throw new Error(`Mailjet HTTP ${res.status} en ${urlBase}`);
-        const raw = await res.text();
-        // Preserva IDs numéricos de 16+ dígitos sin perder precisión en JS
-        const json = JSON.parse(raw.replace(/:\s*(\d{16,})(?=[,\s}\]])/g, ':"$1"'));
+        const json = await fetchMailjetPage(`${urlBase}${sep}Limit=${limit}&Offset=${offset}`, headers);
         const data = json.Data || [];
         todos.push(...data);
         if (data.length < limit) break;
@@ -85,7 +103,7 @@ async function fetchAllMailjet(urlBase, headers) {
     return todos;
 }
 
-async function procesarMailjet(apiKey, secretKey, fechaStr) {
+async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
     const auth = Buffer.from(`${apiKey}:${secretKey}`).toString('base64');
     const headers = { Authorization: `Basic ${auth}` };
     const [y, m, d] = fechaStr.split('-').map(Number);
@@ -94,7 +112,7 @@ async function procesarMailjet(apiKey, secretKey, fechaStr) {
     const fromMs = Date.UTC(y, m - 1, d, 5, 0, 0, 0);
     const toMs = Date.UTC(y, m - 1, d + 1, 4, 59, 59, 999);
     const fromTS = new Date(fromMs).toISOString().slice(0, 19) + 'Z';
-    const toTS = new Date(Date.UTC(y, m - 1, d + 1, 4, 59, 59)).toISOString().slice(0, 19) + 'Z';
+    const toTS = new Date(Date.UTC(y, m - 1, d + 1, 5, 0, 0)).toISOString().slice(0, 19) + 'Z';
 
     const enAyer = (iso) => {
         if (!iso) return true;
@@ -102,24 +120,34 @@ async function procesarMailjet(apiKey, secretKey, fechaStr) {
         return Number.isNaN(t) || (t >= fromMs && t <= toMs);
     };
 
-    const [opens, clicks, spams, unsubs, blockeds, softs, hards, mensajes] = await Promise.all([
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/openinformation?FromTS=${fromTS}&ToTS=${toTS}`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/clickstatistics?FromTS=${fromTS}&ToTS=${toTS}`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&MessageStatus=6`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&MessageStatus=7`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&MessageStatus=8`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&MessageStatus=9`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&MessageStatus=10`, headers),
-        fetchAllMailjet(`https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&ShowContactAlt=true&ShowSubject=true`, headers),
-    ]);
+    // 1) Mensajes (fuente principal)
+    const mensajes = await fetchAllMailjet(
+        `https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&ShowContactAlt=true&ShowSubject=true`,
+        headers
+    );
 
-    const openIds = new Set(opens.filter(o => enAyer(o.OpenedAt)).map(o => String(o.MessageID)));
-    const clickIds = new Set(clicks.filter(c => enAyer(c.ClickedAt)).map(c => String(c.MessageID)));
-    const spamIds = new Set(spams.map(s => String(s.ID)));
-    const unsubIds = new Set(unsubs.map(u => String(u.ID)));
-    const blockedIds = new Set(blockeds.map(b => String(b.ID)));
-    const softIds = new Set(softs.map(b => String(b.ID)));
-    const hardIds = new Set(hards.map(b => String(b.ID)));
+    // 2) Opens y Clicks secuenciales con respaldo por si openinformation da 504
+    let openIds = null;
+    try {
+        const opens = await fetchAllMailjet(
+            `https://api.mailjet.com/v3/REST/openinformation?FromTS=${fromTS}&ToTS=${toTS}`,
+            headers
+        );
+        openIds = new Set(opens.filter(o => enAyer(o.OpenedAt)).map(o => String(o.MessageID)));
+    } catch (e) {
+        console.warn(`${nombreCuenta} aviso openinformation (${e.message}) -> usando Status del mensaje`);
+    }
+
+    let clickIds = null;
+    try {
+        const clicks = await fetchAllMailjet(
+            `https://api.mailjet.com/v3/REST/clickstatistics?FromTS=${fromTS}&ToTS=${toTS}`,
+            headers
+        );
+        clickIds = new Set(clicks.filter(c => enAyer(c.ClickedAt)).map(c => String(c.MessageID)));
+    } catch (e) {
+        console.warn(`${nombreCuenta} aviso clickstatistics (${e.message}) -> usando Status del mensaje`);
+    }
 
     const porISP = nuevoMapaISPs();
 
@@ -133,13 +161,13 @@ async function procesarMailjet(apiKey, secretKey, fechaStr) {
         const st = String(msg.Status || '').toLowerCase();
         const isp = classifyISP(msg.ContactAlt);
 
-        const blocked = blockedIds.has(idStr) || st === 'blocked';
-        const soft = softIds.has(idStr) || st.includes('soft') || (st === 'bounce' && !msg.StatePermanent);
-        const hard = hardIds.has(idStr) || st.includes('hard') || (st === 'bounce' && Boolean(msg.StatePermanent));
-        const unsub = unsubIds.has(idStr) || st === 'unsub';
-        const spam = spamIds.has(idStr) || st === 'spam';
-        const opened = openIds.has(idStr);
-        const clicked = clickIds.has(idStr);
+        const blocked = st === 'blocked';
+        const soft = st.includes('soft') || (st === 'bounce' && !msg.StatePermanent);
+        const hard = st.includes('hard') || (st === 'bounce' && Boolean(msg.StatePermanent));
+        const unsub = st === 'unsub';
+        const spam = st === 'spam';
+        const clicked = (clickIds ? clickIds.has(idStr) : false) || st === 'clicked';
+        const opened = (openIds ? openIds.has(idStr) : st === 'clicked') || st === 'opened';
         const delivered = !(hard || soft || blocked);
 
         const r = porISP[isp];
@@ -279,13 +307,13 @@ async function main() {
         .catch(e => { console.error('GoDaddy:', e.message); return {}; });
 
     const mlj1 = (process.env.MJ_KEY_1 && process.env.MJ_SECRET_1)
-        ? await procesarMailjet(process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return nuevoMapaISPs(); })
+        ? await procesarMailjet('MLJ1', process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return nuevoMapaISPs(); })
         : nuevoMapaISPs();
     const mlj2 = (process.env.MJ_KEY_2 && process.env.MJ_SECRET_2)
-        ? await procesarMailjet(process.env.MJ_KEY_2, process.env.MJ_SECRET_2, fechaStr).catch(e => { console.error('MLJ2:', e.message); return nuevoMapaISPs(); })
+        ? await procesarMailjet('MLJ2', process.env.MJ_KEY_2, process.env.MJ_SECRET_2, fechaStr).catch(e => { console.error('MLJ2:', e.message); return nuevoMapaISPs(); })
         : nuevoMapaISPs();
     const mlj3 = (process.env.MJ_KEY_3 && process.env.MJ_SECRET_3)
-        ? await procesarMailjet(process.env.MJ_KEY_3, process.env.MJ_SECRET_3, fechaStr).catch(e => { console.error('MLJ_SH:', e.message); return nuevoMapaISPs(); })
+        ? await procesarMailjet('MLJ_SH', process.env.MJ_KEY_3, process.env.MJ_SECRET_3, fechaStr).catch(e => { console.error('MLJ_SH:', e.message); return nuevoMapaISPs(); })
         : nuevoMapaISPs();
 
     const seg1 = process.env.SG_KEY_1
