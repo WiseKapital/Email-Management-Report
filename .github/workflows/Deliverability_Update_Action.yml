@@ -34,7 +34,7 @@ jobs:
           MJ_SECRET_3: ${{ secrets.MLJSH_SECRET }}
           SG_KEY_1: ${{ secrets.SEG }}
           SG_KEY_2: ${{ secrets.SEGSH }}
-          GODADDY_WEBHOOK_URL: ${{ secrets.GODADDY_WEBHOOK_URL }}
+          CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
           FECHA_MANUAL: ${{ github.event.inputs.fecha }}
         run: node Deliverability_Update.js
 
@@ -46,19 +46,19 @@ jobs:
           git commit -m "CSV diario (${{ github.event.inputs.fecha || 'ayer' }}) [skip ci]" || exit 0
           git push
 
-      - name: Limpiar logs ya guardados en GoDaddy
+      - name: Limpiar logs ya guardados en Cloudflare D1
         env:
-          GODADDY_WEBHOOK_URL: ${{ secrets.GODADDY_WEBHOOK_URL }}
+          CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
         run: |
-          if [ -n "$GODADDY_WEBHOOK_URL" ]; then
+          if [ -n "$CLOUDFLARE_WEBHOOK_URL" ]; then
             SEP="?"
-            if [[ "$GODADDY_WEBHOOK_URL" == *"?"* ]]; then
+            if [[ "$CLOUDFLARE_WEBHOOK_URL" == *"?"* ]]; then
               SEP="&"
             fi
             FECHA="${{ github.event.inputs.fecha }}"
             if [ -z "$FECHA" ]; then
               FECHA=$(TZ='America/Bogota' date -d 'yesterday' +%Y-%m-%d)
             fi
-            echo "Limpiando logs en GoDaddy hasta $FECHA..."
-            curl -fsS -4 --http1.1 --connect-timeout 10 --max-time 20 -A "Mozilla/5.0" "${GODADDY_WEBHOOK_URL}${SEP}borrar=${FECHA}" || echo "Aviso: GoDaddy no respondio"
+            echo "Limpiando logs en Cloudflare D1 hasta $FECHA..."
+            curl -fsS -4 --http1.1 --connect-timeout 10 --max-time 20 -A "Mozilla/5.0" "${CLOUDFLARE_WEBHOOK_URL}${SEP}borrar=${FECHA}" || echo "Aviso: Cloudflare no respondio"
           fi
