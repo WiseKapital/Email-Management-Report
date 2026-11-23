@@ -183,7 +183,7 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
     return porISP;
 }
 
-// =======================================================////////
+// =======================================================
 // 2. SENDGRID (solo AYER)
 // =======================================================
 async function procesarSendgrid(apiKey, fechaStr) {
@@ -231,9 +231,9 @@ async function procesarSendgrid(apiKey, fechaStr) {
 }
 
 // =======================================================
-// 3. GODADDY PHP (solo clics de AYER -> Estados USA)
+// 3. CLOUDFLARE D1 (solo clics de AYER -> Estados USA)
 // =======================================================
-async function obtenerEstadosGoDaddy(urlBase, fechaStr) {
+async function obtenerEstadosCloudflare(urlBase, fechaStr) {
     const porCuenta = { MLJ1: {}, MLJ2: {}, MLJ_SH: {} };
     if (!urlBase || !urlBase.startsWith('http') || !geoip) return porCuenta;
 
@@ -246,7 +246,7 @@ async function obtenerEstadosGoDaddy(urlBase, fechaStr) {
 
     const json = await res.json();
     const clics = json.clics || [];
-    console.log(`GoDaddy clics encontrados para ${fechaStr}: ${clics.length}`);
+    console.log(`Cloudflare D1 clics encontrados para ${fechaStr}: ${clics.length}`);
 
     for (const c of clics) {
         if (c.fecha !== fechaStr || !c.ip || Number(c.campaign_id || 0) === 0) continue;
@@ -303,8 +303,9 @@ async function main() {
     const [anioNum, mesNum, diaNum] = fechaStr.split('-').map(Number);
     const fechaCorta = `${MESES_CORTOS[mesNum - 1]}-${diaNum}`;
 
-    const gd = await obtenerEstadosGoDaddy(process.env.GODADDY_WEBHOOK_URL, fechaStr)
-        .catch(e => { console.error('GoDaddy:', e.message); return {}; });
+    const webhookUrl = process.env.CLOUDFLARE_WEBHOOK_URL || process.env.GODADDY_WEBHOOK_URL;
+    const gd = await obtenerEstadosCloudflare(webhookUrl, fechaStr)
+        .catch(e => { console.error('Cloudflare D1:', e.message); return {}; });
 
     const mlj1 = (process.env.MJ_KEY_1 && process.env.MJ_SECRET_1)
         ? await procesarMailjet('MLJ1', process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return nuevoMapaISPs(); })
