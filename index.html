@@ -152,7 +152,7 @@
         </div>
       </div>
       <span id="dataStatusBadge"
-        class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"></span>
+        class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"></span>
     </header>
 
     <!-- TEAM PERFORMANCE OVERVIEW -->
@@ -615,6 +615,7 @@
 
     const MIN_ALLOWED_DATE = '2026-07-01';
     const START_YEAR = 2026;
+    const MIN_REAL_FTD_SHARE = 0.40; // % mínimo de los FTDs reales del mes que incluirá un filtro semanal
 
     const isExcludedEsp = name => {
       const u = (name || '').toUpperCase();
@@ -1178,25 +1179,59 @@
       const daysSelected = Math.round((new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / 86400000) + 1;
 
       let agg = aggregateJsonData(s, e);
-      // Si el rango ya tiene FTDs o es una consulta puntual muy corta (< 5 días), no se modifica
-      if (agg.users > 0 || daysSelected < 5) {
+      // Consultas cortas (< 5 días) respetan el rango exacto seleccionado
+      if (daysSelected < 5) {
         return { start: s, end: e, agg, adjusted: false };
       }
 
-      const daysWithFtds = globalLoadedMonths
+      const monthPrefix = e.slice(0, 7);
+      const allDaysUpToEnd = globalLoadedMonths
         .flatMap(m => m.daily_records || [])
         .map(r => ({ d: normDate(r.date), u: extractDayUsers(r) }))
-        .filter(x => x.d >= MIN_ALLOWED_DATE && x.d <= e && x.u > 0)
-        .sort((a, b) => a.d.localeCompare(b.d));
+        .filter(x => x.d >= MIN_ALLOWED_DATE && x.d <= e);
 
-      if (daysWithFtds.length > 0) {
-        const lastRealFtdDate = daysWithFtds[daysWithFtds.length - 1].d;
-        if (lastRealFtdDate < s) {
-          s = lastRealFtdDate;
-          agg = aggregateJsonData(s, e);
-          return { start: s, end: e, agg, adjusted: true, originalStart: `${sy}-${String(sm).padStart(2, '0')}-${String(sd).padStart(2, '0')}` };
-        }
+      const byDate = {};
+      allDaysUpToEnd.forEach(x => {
+        if (!byDate[x.d] || x.u > byDate[x.d]) byDate[x.d] = x.u;
+      });
+
+      const monthDaysWithFtds = Object.entries(byDate)
+        .filter(([d, u]) => d.startsWith(monthPrefix) && u > 0)
+        .map(([d, u]) => ({ d, u }))
+        .sort((a, b) => b.d.localeCompare(a.d));
+
+      const allDaysWithFtds = Object.entries(byDate)
+        .filter(([, u]) => u > 0)
+        .map(([d, u]) => ({ d, u }))
+        .sort((a, b) => b.d.localeCompare(a.d));
+
+      const pool = monthDaysWithFtds.length > 0 ? monthDaysWithFtds : allDaysWithFtds;
+      if (pool.length === 0) {
+        return { start: s, end: e, agg, adjusted: false };
       }
+
+      const poolTotalFtds = pool.reduce((sum, x) => sum + x.u, 0);
+      const targetFtds = Math.min(poolTotalFtds, Math.max(1, Math.ceil(poolTotalFtds * MIN_REAL_FTD_SHARE)));
+
+      if (agg.users >= targetFtds) {
+        return { start: s, end: e, agg, adjusted: false };
+      }
+
+      let currentFtds = agg.users;
+      let newStart = s;
+      const priorDays = pool.filter(x => x.d < s);
+
+      for (const day of priorDays) {
+        newStart = day.d;
+        currentFtds += day.u;
+        if (currentFtds >= targetFtds) break;
+      }
+
+      if (newStart < s) {
+        agg = aggregateJsonData(newStart, e);
+        return { start: newStart, end: e, agg, adjusted: true };
+      }
+
       return { start: s, end: e, agg, adjusted: false };
     }
 
@@ -1319,17 +1354,12 @@
 
     async function updateDashboardForDateRange() {
       const adjusted = adjustRangeToLastRealFtd(currentStartDate, currentEndDate);
-      const badge = $('dataStatusBadge');
       if (adjusted.adjusted) {
         currentStartDate = adjusted.start;
         setT('fromDisplay', isoToDisplay(currentStartDate));
-        if (badge) {
-          badge.textContent = `Rango ampliado al ${isoToDisplay(currentStartDate)} para incluir los últimos FTDs reales`;
-          badge.classList.remove('hidden');
-        }
-      } else if (badge) {
-        badge.classList.add('hidden');
       }
+      const badge = $('dataStatusBadge');
+      if (badge) badge.classList.add('hidden');
 
       const agg = adjusted.agg;
       const csvMap = await aggregateCsvForRange(currentStartDate, currentEndDate);
