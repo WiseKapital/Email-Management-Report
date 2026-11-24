@@ -615,7 +615,6 @@
 
     const MIN_ALLOWED_DATE = '2026-07-01';
     const START_YEAR = 2026;
-    const MIN_REAL_FTD_SHARE = 0.40; // % mínimo de los FTDs reales del mes que incluirá un filtro semanal
 
     const isExcludedEsp = name => {
       const u = (name || '').toUpperCase();
@@ -1026,10 +1025,32 @@
         })
       );
 
+      let monthRealUsers = 0, monthRealRevenue = 0, monthRealSignups = 0, mtdBreakdownUsers = 0;
+
       months.forEach(m => {
         if (m.kpis) { ['budget', 'signups', 'users', 'revenue', 'profit'].forEach(k => agg.kpi[k] += (m.kpis[k] || 0)); }
         agg.totalMonthDays += (m.total_days_in_month || 0);
+
+        (m.daily_records || []).forEach(r => {
+          const d = normDate(r.date);
+          if (d && d <= e) {
+            monthRealUsers += extractDayUsers(r);
+            monthRealRevenue += (r.revenue || 0);
+            monthRealSignups += (r.signups || 0);
+          }
+        });
+
+        const mtdRowsCheck = m.esp_ip_breakdown?.by_row || m.esp_mtd_totals || [];
+        mtdRowsCheck.forEach(item => {
+          if (!item.is_total && !item.is_overall && !isExcludedEsp(item.esp_ip)) {
+            mtdBreakdownUsers += (item.ftds || 0);
+          }
+        });
       });
+
+      if (monthRealUsers === 0 && mtdBreakdownUsers > 0) {
+        monthRealUsers = mtdBreakdownUsers;
+      }
 
       const espIpMap = {};
       const brandCanonicalMap = {};
@@ -1116,6 +1137,53 @@
         });
       });
 
+      // 3. Participación proporcional (%) de los FTDs reales del mes cuando el sub-rango tiene actividad (Revenue / Signups)
+      //    y los FTDs diarios aún no se ven reflejados en esas fechas (sin modificar nunca el mes completo ni mover el calendario).
+      if (monthRealUsers > 0 && (agg.revenue > 0 || agg.signups > 0)) {
+        const revShare = monthRealRevenue > 0 ? (agg.revenue / monthRealRevenue) : 0;
+        const sigShare = monthRealSignups > 0 ? (agg.signups / monthRealSignups) : 0;
+        let activityShare = (revShare > 0 && sigShare > 0) ? (revShare * 0.65 + sigShare * 0.35) : (revShare || sigShare);
+        activityShare = Math.min(1, Math.max(0, activityShare));
+
+        if (activityShare > 0) {
+          const proportionalUsers = Math.min(monthRealUsers, Math.max(1, Math.round(monthRealUsers * activityShare)));
+          if (agg.users < proportionalUsers) {
+            agg.users = proportionalUsers;
+          }
+        }
+      }
+
+      // Sincronizar agg.brands y agg.advertisers si agg.users es mayor a la suma parcial registrada en esos objetos
+      const brandVals = Object.values(agg.brands);
+      const brandSum = brandVals.reduce((a, b) => a + (b.users || 0), 0);
+      if (agg.users > brandSum && brandVals.length > 0) {
+        const activeBrands = brandVals.filter(b => (b.revenue || 0) > 0 || (b.signups || 0) > 0);
+        const pool = activeBrands.length > 0 ? activeBrands : brandVals;
+        const extras = new Array(pool.length).fill(0);
+        distributeExactIntegerTotal(
+          pool.map((b, idx) => ({ b, idx })),
+          agg.users - brandSum,
+          x => ((x.b.revenue || 0) > 0 ? x.b.revenue : ((x.b.signups || 0) || 1)),
+          (x, val) => { extras[x.idx] = val; }
+        );
+        pool.forEach((b, idx) => { b.users += extras[idx]; });
+      }
+
+      const advVals = Object.values(agg.advertisers);
+      const advSum = advVals.reduce((a, v) => a + (v.users || 0), 0);
+      if (agg.users > advSum && advVals.length > 0) {
+        const activeAdvs = advVals.filter(v => (v.revenue || 0) > 0 || (v.signups || 0) > 0);
+        const pool = activeAdvs.length > 0 ? activeAdvs : advVals;
+        const extras = new Array(pool.length).fill(0);
+        distributeExactIntegerTotal(
+          pool.map((v, idx) => ({ v, idx })),
+          agg.users - advSum,
+          x => ((x.v.revenue || 0) > 0 ? x.v.revenue : ((x.v.signups || 0) || 1)),
+          (x, val) => { extras[x.idx] = val; }
+        );
+        pool.forEach((v, idx) => { v.users += extras[idx]; });
+      }
+
       const rows = [];
       let grandSig = 0, grandFtd = 0;
 
@@ -1171,68 +1239,6 @@
 
       agg.profit = agg.revenue - agg.budget;
       return agg;
-    }
-
-    function adjustRangeToLastRealFtd(s, e) {
-      const [sy, sm, sd] = s.split('-').map(Number);
-      const [ey, em, ed] = e.split('-').map(Number);
-      const daysSelected = Math.round((new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / 86400000) + 1;
-
-      let agg = aggregateJsonData(s, e);
-      // Consultas cortas (< 5 días) respetan el rango exacto seleccionado
-      if (daysSelected < 5) {
-        return { start: s, end: e, agg, adjusted: false };
-      }
-
-      const monthPrefix = e.slice(0, 7);
-      const allDaysUpToEnd = globalLoadedMonths
-        .flatMap(m => m.daily_records || [])
-        .map(r => ({ d: normDate(r.date), u: extractDayUsers(r) }))
-        .filter(x => x.d >= MIN_ALLOWED_DATE && x.d <= e);
-
-      const byDate = {};
-      allDaysUpToEnd.forEach(x => {
-        if (!byDate[x.d] || x.u > byDate[x.d]) byDate[x.d] = x.u;
-      });
-
-      const monthDaysWithFtds = Object.entries(byDate)
-        .filter(([d, u]) => d.startsWith(monthPrefix) && u > 0)
-        .map(([d, u]) => ({ d, u }))
-        .sort((a, b) => b.d.localeCompare(a.d));
-
-      const allDaysWithFtds = Object.entries(byDate)
-        .filter(([, u]) => u > 0)
-        .map(([d, u]) => ({ d, u }))
-        .sort((a, b) => b.d.localeCompare(a.d));
-
-      const pool = monthDaysWithFtds.length > 0 ? monthDaysWithFtds : allDaysWithFtds;
-      if (pool.length === 0) {
-        return { start: s, end: e, agg, adjusted: false };
-      }
-
-      const poolTotalFtds = pool.reduce((sum, x) => sum + x.u, 0);
-      const targetFtds = Math.min(poolTotalFtds, Math.max(1, Math.ceil(poolTotalFtds * MIN_REAL_FTD_SHARE)));
-
-      if (agg.users >= targetFtds) {
-        return { start: s, end: e, agg, adjusted: false };
-      }
-
-      let currentFtds = agg.users;
-      let newStart = s;
-      const priorDays = pool.filter(x => x.d < s);
-
-      for (const day of priorDays) {
-        newStart = day.d;
-        currentFtds += day.u;
-        if (currentFtds >= targetFtds) break;
-      }
-
-      if (newStart < s) {
-        agg = aggregateJsonData(newStart, e);
-        return { start: newStart, end: e, agg, adjusted: true };
-      }
-
-      return { start: s, end: e, agg, adjusted: false };
     }
 
     function getAdvertiserRollupRows(detailedRows) {
@@ -1353,15 +1359,10 @@
     }
 
     async function updateDashboardForDateRange() {
-      const adjusted = adjustRangeToLastRealFtd(currentStartDate, currentEndDate);
-      if (adjusted.adjusted) {
-        currentStartDate = adjusted.start;
-        setT('fromDisplay', isoToDisplay(currentStartDate));
-      }
       const badge = $('dataStatusBadge');
       if (badge) badge.classList.add('hidden');
 
-      const agg = adjusted.agg;
+      const agg = aggregateJsonData(currentStartDate, currentEndDate);
       const csvMap = await aggregateCsvForRange(currentStartDate, currentEndDate);
 
       const sortOrder = ['MLJ (Mailjet) IP 1', 'MLJ (Mailjet) IP 2', 'MLJ (Mailjet) IP 3 / SH', 'SEG (Sendgrid) IP 1', 'SEG (Sendgrid) IP 2 / SH'];
@@ -1502,8 +1503,7 @@
         });
       });
 
-      // 3b. Si hay FTDs reales en r.users / r.advertisers pero r.brands vino sin usuarios,
-      // sincronizar los FTDs reales hacia breakdownByEsp para que PLAYERS y ESP/IP Breakdown los muestren.
+      // 3b. Sincronizar si hay FTDs en agg.users que no estuvieron en r.brands
       const totalAssignedBrandFtds = Object.values(normalizedBrands).reduce((acc, b) => acc + (b.users || 0), 0);
       if (agg.users > 0 && totalAssignedBrandFtds < agg.users) {
         let missingFtds = agg.users - totalAssignedBrandFtds;
