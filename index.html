@@ -152,7 +152,7 @@
         </div>
       </div>
       <span id="dataStatusBadge"
-        class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"></span>
+        class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200"></span>
     </header>
 
     <!-- TEAM PERFORMANCE OVERVIEW -->
@@ -402,7 +402,6 @@
         <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider pt-2">2. Mailbox Domain Deliverability
           Charts</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- PIE CHART MODIFICADO: DELIVERED BY DOMAIN -->
           <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
             <div>
               <h4 class="text-xs font-bold text-slate-900 uppercase">Delivered by Domain (%)</h4>
@@ -611,6 +610,8 @@
 
     let isEspIpExpanded = false;
     let cachedDetailedBreakdownRows = [];
+    let preferredJsonPathIdx = -1;
+    let preferredCsvPathIdx = -1;
 
     const MIN_ALLOWED_DATE = '2026-07-01';
     const START_YEAR = 2026;
@@ -626,6 +627,32 @@
       const d = new Date();
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     };
+
+    const normDate = d => {
+      if (!d) return '';
+      const str = String(d).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+        const [mm, dd, yyyy] = str.split('/');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      return str;
+    };
+
+    function extractDayUsers(r) {
+      if (!r) return 0;
+      const direct = r.users ?? r.ftds ?? r.players ?? 0;
+      if (direct > 0) return direct;
+      const advUsers = Object.values(r.advertisers || {}).reduce((acc, v) => acc + (v.users ?? v.ftds ?? v.players ?? 0), 0);
+      if (advUsers > 0) return advUsers;
+      const brandUsers = Object.values(r.brands || {}).reduce((acc, v) => acc + (v.users ?? v.ftds ?? v.players ?? 0), 0);
+      if (brandUsers > 0) return brandUsers;
+      const espDayUsers = Array.isArray(r.esp_ip_breakdown)
+        ? r.esp_ip_breakdown.reduce((acc, it) => acc + (!it.is_total ? (it.ftds ?? it.users ?? 0) : 0), 0)
+        : 0;
+      if (espDayUsers > 0) return espDayUsers;
+      return r.ops ? ((r.ops.andrea?.users || 0) + (r.ops.jessie?.users || 0)) : 0;
+    }
 
     const _initToday = getTodayIso();
     let currentStartDate = _initToday.substring(0, 8) + '01';
@@ -655,12 +682,21 @@
         `./data_${capKey}.json?t=${ts}`
       ];
 
-      for (const p of candidatePaths) {
+      const order = candidatePaths.map((_, idx) => idx);
+      if (preferredJsonPathIdx >= 0 && preferredJsonPathIdx < order.length) {
+        order.splice(order.indexOf(preferredJsonPathIdx), 1);
+        order.unshift(preferredJsonPathIdx);
+      }
+
+      for (const idx of order) {
         try {
-          const r = await fetch(p, { cache: 'no-store' });
+          const r = await fetch(candidatePaths[idx], { cache: 'no-store' });
           if (r.ok) {
             const d = await r.json();
-            if (d && (d.daily_records || d.summary_mtd)) return d;
+            if (d && (d.daily_records || d.summary_mtd)) {
+              preferredJsonPathIdx = idx;
+              return d;
+            }
           }
         } catch (e) { }
       }
@@ -669,6 +705,7 @@
 
     async function loadAllMonths() {
       const currentYear = getCurrentYear();
+      const currentMonthIdx = new Date().getMonth();
       const years = [];
       for (let y = START_YEAR; y <= Math.max(START_YEAR, currentYear); y++) {
         years.push(y);
@@ -676,9 +713,11 @@
 
       const promises = [];
       for (const y of years) {
-        for (const mKey of MONTH_KEYS) {
+        MONTH_KEYS.forEach((mKey, mIdx) => {
+          if (y === 2026 && mIdx < 6) return;
+          if (y === currentYear && mIdx > currentMonthIdx) return;
           promises.push(fetchMonthFile(mKey, y));
-        }
+        });
       }
 
       const results = await Promise.all(promises);
@@ -687,7 +726,7 @@
       const seenKeys = new Set();
       const uniqueMonths = [];
       valid.forEach(m => {
-        const key = (m.daily_records || []).map(r => r.date).join('|') || m.month || JSON.stringify(m.kpis || {});
+        const key = (m.daily_records || []).map(r => normDate(r.date)).join('|') || m.month || JSON.stringify(m.kpis || {});
         if (!seenKeys.has(key)) {
           seenKeys.add(key);
           uniqueMonths.push(m);
@@ -711,10 +750,22 @@
       setT('calHeaderTitle', `${MONTH_NAMES[calViewMonth]} ${calViewYear}`);
     }
 
+    function resetPillStyles(activeTarget = null) {
+      const base = "flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs transition-all hover:border-slate-400 cursor-pointer focus:outline-none";
+      const active = "flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs transition-all hover:bg-slate-50 cursor-pointer focus:outline-none";
+      $('fromPillBtn').className = activeTarget === 'from' ? active : base;
+      $('toPillBtn').className = activeTarget === 'to' ? active : base;
+    }
+
     function toggleCustomCalendar(target) {
       const pop = $('customCalendarPopup');
-      if (!pop.classList.contains('hidden') && activeCalTarget === target) { pop.classList.add('hidden'); resetPillStyles(); return; }
+      if (!pop.classList.contains('hidden') && activeCalTarget === target) {
+        pop.classList.add('hidden');
+        resetPillStyles();
+        return;
+      }
       activeCalTarget = target;
+      resetPillStyles(target);
       pop.classList.remove('hidden');
       pop.style.left = target === 'from' ? '0px' : '130px';
       const d = target === 'from' ? currentStartDate : currentEndDate;
@@ -722,7 +773,6 @@
       calViewMonth = parseInt(d.substring(5, 7), 10) - 1;
       renderCustomCalendar();
     }
-    const resetPillStyles = () => ['fromPillBtn', 'toPillBtn'].forEach(id => $(id).className = "flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer focus:outline-none");
 
     function navigateMonth(dir) {
       let nextMonth = calViewMonth + dir;
@@ -894,14 +944,21 @@
         `data/maildata_${capM}/${d}.csv`
       ];
 
-      for (const p of candidatePaths) {
+      const order = candidatePaths.map((_, idx) => idx);
+      if (preferredCsvPathIdx >= 0 && preferredCsvPathIdx < order.length) {
+        order.splice(order.indexOf(preferredCsvPathIdx), 1);
+        order.unshift(preferredCsvPathIdx);
+      }
+
+      for (const idx of order) {
         try {
-          const r = await fetch(`${p}?t=${ts}`, { cache: 'no-store' });
+          const r = await fetch(`${candidatePaths[idx]}?t=${ts}`, { cache: 'no-store' });
           if (r.ok) {
             const txt = await r.text();
             if (txt && !txt.trim().startsWith('<') && txt.includes(',')) {
               const parsed = parseDailyCsv(txt);
               if (parsed) {
+                preferredCsvPathIdx = idx;
                 csvCache[k] = parsed;
                 return parsed;
               }
@@ -961,13 +1018,20 @@
         ops: { jessie: { signups: 0, users: 0 }, andrea: { signups: 0, users: 0 }, signups_by_advertiser: {}, users_by_advertiser: {} }
       };
 
-      const months = globalLoadedMonths.filter(m => (m.daily_records || []).some(r => r.date >= s && r.date <= e));
+      const months = globalLoadedMonths.filter(m =>
+        (m.daily_records || []).some(r => {
+          const d = normDate(r.date);
+          return d >= s && d <= e;
+        })
+      );
+
       months.forEach(m => {
         if (m.kpis) { ['budget', 'signups', 'users', 'revenue', 'profit'].forEach(k => agg.kpi[k] += (m.kpis[k] || 0)); }
         agg.totalMonthDays += (m.total_days_in_month || 0);
       });
 
       const espIpMap = {};
+      const brandCanonicalMap = {};
 
       function addBreakdownItem(espIpRaw, advRaw, brRaw, sig, ftd) {
         const espIp = (espIpRaw || 'Other').trim();
@@ -988,7 +1052,10 @@
       }
 
       months.forEach(m => {
-        const dailyInRange = (m.daily_records || []).filter(r => r.date >= s && r.date <= e);
+        const dailyInRange = (m.daily_records || []).filter(r => {
+          const d = normDate(r.date);
+          return d >= s && d <= e;
+        });
 
         // 1. CARGA BASE MTD SIEMPRE ACTIVA (Preserva cardcrush_direct, LuckyBunny direct, etc.)
         const mtdRows = m.esp_ip_breakdown?.by_row || m.esp_mtd_totals || [];
@@ -997,28 +1064,38 @@
           addBreakdownItem(item.esp_ip, item.advertiser, item.brand, item.signups, item.ftds);
         });
 
-        // 2. Acumulación de métricas diarias
+        // 2. Acumulación de métricas diarias con fallback real
         dailyInRange.forEach(r => {
+          const dayUsers = extractDayUsers(r);
+
           agg.daysElapsedInRange++;
           agg.budget += r.budget || 0;
           agg.signups += r.signups || 0;
-          agg.users += r.users || 0;
+          agg.users += dayUsers;
           agg.revenue += r.revenue || 0;
 
           Object.entries(r.advertisers || {}).forEach(([adv, v]) => {
             const cleanAdv = (adv || '-').trim();
             if (!agg.advertisers[cleanAdv]) agg.advertisers[cleanAdv] = { signups: 0, users: 0, revenue: 0 };
             agg.advertisers[cleanAdv].signups += v.signups || 0;
-            agg.advertisers[cleanAdv].users += v.users || 0;
+            agg.advertisers[cleanAdv].users += (v.users ?? v.ftds ?? v.players ?? 0);
             agg.advertisers[cleanAdv].revenue += v.revenue || 0;
           });
 
           Object.entries(r.brands || {}).forEach(([br, v]) => {
             const cleanBr = (br || '-').trim();
-            if (!agg.brands[cleanBr]) agg.brands[cleanBr] = { advertiser: v.advertiser || '-', signups: 0, users: 0, revenue: 0 };
-            agg.brands[cleanBr].signups += v.signups || 0;
-            agg.brands[cleanBr].users += v.users || 0;
-            agg.brands[cleanBr].revenue += v.revenue || 0;
+            const lowBr = cleanBr.toLowerCase();
+            if (!brandCanonicalMap[lowBr]) brandCanonicalMap[lowBr] = cleanBr;
+            const canonicalBr = brandCanonicalMap[lowBr];
+
+            if (!agg.brands[canonicalBr]) {
+              agg.brands[canonicalBr] = { advertiser: v.advertiser || '-', signups: 0, users: 0, revenue: 0 };
+            } else if (agg.brands[canonicalBr].advertiser === '-' && v.advertiser) {
+              agg.brands[canonicalBr].advertiser = v.advertiser;
+            }
+            agg.brands[canonicalBr].signups += v.signups || 0;
+            agg.brands[canonicalBr].users += (v.users ?? v.ftds ?? v.players ?? 0);
+            agg.brands[canonicalBr].revenue += v.revenue || 0;
           });
 
           if (r.ops) {
@@ -1093,6 +1170,34 @@
 
       agg.profit = agg.revenue - agg.budget;
       return agg;
+    }
+
+    function adjustRangeToLastRealFtd(s, e) {
+      const [sy, sm, sd] = s.split('-').map(Number);
+      const [ey, em, ed] = e.split('-').map(Number);
+      const daysSelected = Math.round((new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / 86400000) + 1;
+
+      let agg = aggregateJsonData(s, e);
+      // Si el rango ya tiene FTDs o es una consulta puntual muy corta (< 5 días), no se modifica
+      if (agg.users > 0 || daysSelected < 5) {
+        return { start: s, end: e, agg, adjusted: false };
+      }
+
+      const daysWithFtds = globalLoadedMonths
+        .flatMap(m => m.daily_records || [])
+        .map(r => ({ d: normDate(r.date), u: extractDayUsers(r) }))
+        .filter(x => x.d >= MIN_ALLOWED_DATE && x.d <= e && x.u > 0)
+        .sort((a, b) => a.d.localeCompare(b.d));
+
+      if (daysWithFtds.length > 0) {
+        const lastRealFtdDate = daysWithFtds[daysWithFtds.length - 1].d;
+        if (lastRealFtdDate < s) {
+          s = lastRealFtdDate;
+          agg = aggregateJsonData(s, e);
+          return { start: s, end: e, agg, adjusted: true, originalStart: `${sy}-${String(sm).padStart(2, '0')}-${String(sd).padStart(2, '0')}` };
+        }
+      }
+      return { start: s, end: e, agg, adjusted: false };
     }
 
     function getAdvertiserRollupRows(detailedRows) {
@@ -1213,7 +1318,20 @@
     }
 
     async function updateDashboardForDateRange() {
-      const agg = aggregateJsonData(currentStartDate, currentEndDate);
+      const adjusted = adjustRangeToLastRealFtd(currentStartDate, currentEndDate);
+      const badge = $('dataStatusBadge');
+      if (adjusted.adjusted) {
+        currentStartDate = adjusted.start;
+        setT('fromDisplay', isoToDisplay(currentStartDate));
+        if (badge) {
+          badge.textContent = `Rango ampliado al ${isoToDisplay(currentStartDate)} para incluir los últimos FTDs reales`;
+          badge.classList.remove('hidden');
+        }
+      } else if (badge) {
+        badge.classList.add('hidden');
+      }
+
+      const agg = adjusted.agg;
       const csvMap = await aggregateCsvForRange(currentStartDate, currentEndDate);
 
       const sortOrder = ['MLJ (Mailjet) IP 1', 'MLJ (Mailjet) IP 2', 'MLJ (Mailjet) IP 3 / SH', 'SEG (Sendgrid) IP 1', 'SEG (Sendgrid) IP 2 / SH'];
@@ -1353,6 +1471,53 @@
           }
         });
       });
+
+      // 3b. Si hay FTDs reales en r.users / r.advertisers pero r.brands vino sin usuarios,
+      // sincronizar los FTDs reales hacia breakdownByEsp para que PLAYERS y ESP/IP Breakdown los muestren.
+      const totalAssignedBrandFtds = Object.values(normalizedBrands).reduce((acc, b) => acc + (b.users || 0), 0);
+      if (agg.users > 0 && totalAssignedBrandFtds < agg.users) {
+        let missingFtds = agg.users - totalAssignedBrandFtds;
+        const allItems = Object.values(breakdownByEsp).flatMap(g => Object.values(g));
+
+        let assignedByAdv = 0;
+        const advEntries = Object.entries(agg.advertisers).filter(([, v]) => (v.users || 0) > 0);
+        if (advEntries.length > 0 && allItems.length > 0) {
+          advEntries.forEach(([advName, advData]) => {
+            const advKey = advName.trim().toLowerCase();
+            const advItems = allItems.filter(it => (it.advertiser || '').trim().toLowerCase() === advKey);
+            const currentAdvFtds = advItems.reduce((a, it) => a + (it.ftds || 0), 0);
+            const need = Math.max(0, (advData.users || 0) - currentAdvFtds);
+            if (need > 0 && advItems.length > 0) {
+              const hasOrig = advItems.some(it => (it.origFtd || 0) > 0);
+              const extras = new Array(advItems.length).fill(0);
+              distributeExactIntegerTotal(
+                advItems.map((it, idx) => ({ it, idx })),
+                need,
+                x => (hasOrig ? (x.it.origFtd || 0) : ((x.it.signups || 0) || (x.it.origSig || 0) || 1)),
+                (x, val) => { extras[x.idx] = val; }
+              );
+              advItems.forEach((it, idx) => { it.ftds += extras[idx]; });
+              assignedByAdv += need;
+            }
+          });
+        }
+
+        missingFtds = Math.max(0, missingFtds - assignedByAdv);
+
+        if (missingFtds > 0 && allItems.length > 0) {
+          const activeItems = allItems.filter(it => (it.signups || 0) > 0 || (it.origFtd || 0) > 0 || (it.origSig || 0) > 0);
+          const pool = activeItems.length > 0 ? activeItems : allItems;
+          const hasOrig = pool.some(it => (it.origFtd || 0) > 0);
+          const extras = new Array(pool.length).fill(0);
+          distributeExactIntegerTotal(
+            pool.map((it, idx) => ({ it, idx })),
+            missingFtds,
+            x => (hasOrig ? (x.it.origFtd || 0) : ((x.it.signups || 0) || (x.it.origSig || 0) || 1)),
+            (x, val) => { extras[x.idx] = val; }
+          );
+          pool.forEach((it, idx) => { it.ftds += extras[idx]; });
+        }
+      }
 
       // 4. Reconstrucción de filas para la tabla ESP / IP Breakdown
       const allKnownEsps = Array.from(new Set([...sortOrder, ...Object.keys(breakdownByEsp)])).filter(e => !isExcludedEsp(e));
@@ -1511,11 +1676,11 @@
         el.className = `font-bold ${rrVal >= kpiVal ? 'text-emerald-600' : 'text-rose-600'}`;
       };
 
-      setT('cardKpiSignupsSub', `KPI: ${Math.round(agg.kpi.signups)}`);
-      setCardRr('cardRrSignupsSub', `RR: ${rrS}`, rrS, Math.round(agg.kpi.signups));
+      setT('cardKpiSignupsSub', `KPI: ${Math.round(agg.kpi.signups).toLocaleString()}`);
+      setCardRr('cardRrSignupsSub', `RR: ${rrS.toLocaleString()}`, rrS, Math.round(agg.kpi.signups));
 
-      setT('cardKpiUsersSub', `KPI: ${Math.round(agg.kpi.users)}`);
-      setCardRr('cardRrUsersSub', `RR: ${rrU}`, rrU, Math.round(agg.kpi.users));
+      setT('cardKpiUsersSub', `KPI: ${Math.round(agg.kpi.users).toLocaleString()}`);
+      setCardRr('cardRrUsersSub', `RR: ${rrU.toLocaleString()}`, rrU, Math.round(agg.kpi.users));
 
       setT('cardKpiRevenueSub', `KPI: $${(agg.kpi.revenue / 1000).toFixed(1)}k`);
       setCardRr('cardRrRevenueSub', `RR: $${(rrR / 1000).toFixed(1)}k`, rrR, agg.kpi.revenue);
@@ -1595,14 +1760,16 @@
     }
 
     function renderEspTable(list, agg) {
-      const tb = $('espTableBody'), tf = $('espTableFoot'); tb.innerHTML = '';
+      const tb = $('espTableBody'), tf = $('espTableFoot');
+      let html = '';
       list.forEach(i => {
         const v = i.delivered + (i.softBounce || 0) + (i.hardBounce || 0);
-        tb.innerHTML += `<tr class="esp-summary-row"><td class="py-3 px-4 text-left font-bold">${i.esp}</td><td class="py-3 px-4 font-mono">${v.toLocaleString()}</td><td class="py-3 px-4 font-mono">${i.delivered.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-700">${(i.softBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-rose-700">${(i.hardBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-emerald-700">${i.opened.toLocaleString()}</td><td class="py-3 px-4 font-mono text-sky-700">${i.clicked.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-600">${(i.signups || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-indigo-600">${(i.players || 0).toLocaleString()}</td></tr>`;
+        html += `<tr class="esp-summary-row"><td class="py-3 px-4 text-left font-bold">${i.esp}</td><td class="py-3 px-4 font-mono">${v.toLocaleString()}</td><td class="py-3 px-4 font-mono">${i.delivered.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-700">${(i.softBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-rose-700">${(i.hardBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-emerald-700">${i.opened.toLocaleString()}</td><td class="py-3 px-4 font-mono text-sky-700">${i.clicked.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-600">${(i.signups || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-indigo-600">${(i.players || 0).toLocaleString()}</td></tr>`;
         Object.entries(i.domains || {}).forEach(([dom, d]) => {
-          tb.innerHTML += `<tr class="domain-row text-xs text-slate-600 ${areDetailsExpanded ? '' : 'hidden'}"><td class="py-1.5 px-4 text-left pl-8">${dom}</td><td class="font-mono">${(d.delivered + d.softBounce + d.hardBounce).toLocaleString()}</td><td>${d.delivered.toLocaleString()}</td><td class="text-amber-700">${d.softBounce.toLocaleString()}</td><td class="text-rose-700">${d.hardBounce.toLocaleString()}</td><td class="text-emerald-700">${d.opened.toLocaleString()}</td><td class="text-sky-700">${d.clicked.toLocaleString()}</td><td class="text-slate-400 font-mono text-center">-</td><td class="text-slate-400 font-mono text-center">-</td></tr>`;
+          html += `<tr class="domain-row text-xs text-slate-600 ${areDetailsExpanded ? '' : 'hidden'}"><td class="py-1.5 px-4 text-left pl-8">${dom}</td><td class="font-mono">${(d.delivered + d.softBounce + d.hardBounce).toLocaleString()}</td><td>${d.delivered.toLocaleString()}</td><td class="text-amber-700">${d.softBounce.toLocaleString()}</td><td class="text-rose-700">${d.hardBounce.toLocaleString()}</td><td class="text-emerald-700">${d.opened.toLocaleString()}</td><td class="text-sky-700">${d.clicked.toLocaleString()}</td><td class="text-slate-400 font-mono text-center">-</td><td class="text-slate-400 font-mono text-center">-</td></tr>`;
         });
       });
+      tb.innerHTML = html;
       const totVol = (agg.delivered || 0) + (agg.softBounce || 0) + (agg.hardBounce || 0);
       tf.innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers || 0).toLocaleString()}</td></tr>`;
     }
@@ -1610,12 +1777,13 @@
     function renderOpsTeam(ops, rrF, kpi) {
       ['signups', 'users'].forEach(kind => {
         const tb = $(`ops${kind === 'signups' ? 'Signups' : 'Users'}TableBody`), master = ops[`${kind}_by_advertiser`];
-        tb.innerHTML = '';
+        let html = '';
         let [tA, tJ] = [0, 0];
         Object.entries(master || {}).forEach(([adv, r]) => {
           tA += r.andrea; tJ += r.jessie;
-          tb.innerHTML += `<tr class="hover:bg-slate-50 bg-white"><td class="py-1.5 px-3 text-left font-medium text-slate-900">${adv}</td><td class="py-1.5 px-3 font-mono font-bold">${r.andrea}</td><td class="py-1.5 px-3 font-mono font-bold">${r.jessie}</td><td class="py-1.5 px-3 font-mono font-bold">${r.total}</td></tr>`;
+          html += `<tr class="hover:bg-slate-50 bg-white"><td class="py-1.5 px-3 text-left font-medium text-slate-900">${adv}</td><td class="py-1.5 px-3 font-mono font-bold">${r.andrea}</td><td class="py-1.5 px-3 font-mono font-bold">${r.jessie}</td><td class="py-1.5 px-3 font-mono font-bold">${r.total}</td></tr>`;
         });
+        tb.innerHTML = html;
         setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}AndreaTotal`, tA);
         setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}JessieTotal`, tJ);
         setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}GrandTotal`, tA + tJ);
@@ -1623,13 +1791,16 @@
     }
 
     function renderAdvAndBrand(agg) {
-      const aTb = $('advertiserTableBody'), bTb = $('brandTableBody'); aTb.innerHTML = ''; bTb.innerHTML = '';
+      const aTb = $('advertiserTableBody'), bTb = $('brandTableBody');
+      let aHtml = '', bHtml = '';
       Object.entries(agg.advertisers).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([name, d]) => {
-        aTb.innerHTML += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2.5 px-4 text-left font-medium">${name}</td><td class="py-2.5 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2.5 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
+        aHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2.5 px-4 text-left font-medium">${name}</td><td class="py-2.5 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2.5 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
       });
       Object.entries(agg.brands).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([bName, d]) => {
-        bTb.innerHTML += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left">${bName}</td><td class="py-2 px-4 text-left font-medium">${d.advertiser}</td><td class="py-2 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
+        bHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left">${bName}</td><td class="py-2 px-4 text-left font-medium">${d.advertiser}</td><td class="py-2 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
       });
+      aTb.innerHTML = aHtml;
+      bTb.innerHTML = bHtml;
       ['adv', 'brand'].forEach(p => {
         setT(`${p}GrandSignups`, agg.signups); setT(`${p}GrandUsers`, agg.users);
         setT(`${p}GrandRevenue`, `$${Math.round(agg.revenue).toLocaleString()}`);
@@ -1645,7 +1816,6 @@
       chartRefs.espClicks = new Chart($('chartEspClicks'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Clicks', data: [], backgroundColor: '#0284c7' }] }, options: opt() });
       chartRefs.espOpenRate = new Chart($('chartEspOpenRate'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Open Rate (%)', data: [], backgroundColor: '#10b981' }] }, options: opt(v => v + '%') });
 
-      // PIE CHART DE DELIVERED BY DOMAIN CON PORCENTAJES (%)
       chartRefs.domDeliv = new Chart($('chartDomainDelivered'), {
         type: 'pie',
         data: {
@@ -1713,14 +1883,33 @@
       chartRefs.espOpenRate.data.labels = espLabels; chartRefs.espOpenRate.data.datasets[0].data = agg.esp.map(e => e.delivered > 0 ? +((e.opened / e.delivered) * 100).toFixed(2) : 0); chartRefs.espOpenRate.update();
 
       const dAgg = { Gmail: 0, Other: 0, Yahoo: 0, iCloud: 0, Outlook: 0, Hotmail: 0, Aol: 0 }, dOp = { ...dAgg }, dCl = { ...dAgg };
-      (agg.esp || []).forEach(e => Object.entries(e.domains || {}).forEach(([dom, v]) => { if (dAgg[dom] !== undefined) { dAgg[dom] += v.delivered; dOp[dom] += v.opened; dCl[dom] += v.clicked; } }));
+      const domCanonical = { gmail: 'Gmail', other: 'Other', yahoo: 'Yahoo', icloud: 'iCloud', outlook: 'Outlook', hotmail: 'Hotmail', aol: 'Aol' };
+      (agg.esp || []).forEach(e => Object.entries(e.domains || {}).forEach(([dom, v]) => {
+        const target = domCanonical[String(dom).trim().toLowerCase()] || 'Other';
+        dAgg[target] += v.delivered || 0;
+        dOp[target] += v.opened || 0;
+        dCl[target] += v.clicked || 0;
+      }));
 
-      // Actualizar Pie Chart de Delivered by Domain
       chartRefs.domDeliv.data.datasets[0].data = ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Hotmail', 'Aol'].map(d => dAgg[d]);
       chartRefs.domDeliv.update();
 
       chartRefs.domOpenRate.data.datasets[0].data = ['iCloud', 'Outlook', 'Yahoo', 'Aol', 'Hotmail', 'Gmail', 'Other'].map(d => dAgg[d] > 0 ? +((dOp[d] / dAgg[d]) * 100).toFixed(2) : 0); chartRefs.domOpenRate.update();
       chartRefs.domClicks.data.datasets[0].data = ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Aol', 'Hotmail'].map(d => dCl[d]); chartRefs.domClicks.update();
+    }
+
+    function parseSortValue(text, type) {
+      const clean = (text || '').trim();
+      if (type === 'ratio') {
+        const parts = clean.split(':').map(n => parseFloat(n.replace(/[^0-9.-]/g, '')));
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          const [a, b] = parts;
+          if (a > 0 && b > 0) return a / b;
+          if (a === 0 && b > 0) return -b * 0.0001;
+          return -1;
+        }
+      }
+      return parseFloat(clean.replace(/[^0-9.-]/g, '')) || 0;
     }
 
     function sortTable(tableId, col, btn, type) {
@@ -1730,22 +1919,33 @@
       $(tableId).querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅');
       btn.querySelector('.sort-icon').textContent = dir === 'desc' ? '▼' : '▲';
       rows.sort((a, b) => {
-        const vA = a.children[col].innerText.trim(), vB = b.children[col].innerText.trim();
-        const numA = parseFloat(vA.replace(/[^0-9.-]/g, '')) || 0, numB = parseFloat(vB.replace(/[^0-9.-]/g, '')) || 0;
+        const numA = parseSortValue(a.children[col].innerText, type);
+        const numB = parseSortValue(b.children[col].innerText, type);
         return dir === 'desc' ? (numB - numA) : (numA - numB);
       });
       tbody.innerHTML = ''; rows.forEach(r => tbody.appendChild(r));
     }
 
     function resetTable(tableId) {
-      const tbody = $(tableId).querySelector('tbody');
-      if (tbody && initialTableState[tableId]) { tbody.innerHTML = initialTableState[tableId]; tableSortDirections[tableId] = {}; }
+      const tbl = $(tableId);
+      const tbody = tbl?.querySelector('tbody');
+      if (tbody && initialTableState[tableId]) {
+        tbody.innerHTML = initialTableState[tableId];
+        tableSortDirections[tableId] = {};
+        tbl.querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅');
+      }
     }
 
     function toggleTableDetails() {
       areDetailsExpanded = !areDetailsExpanded;
       document.querySelectorAll('.domain-row').forEach(r => r.classList.toggle('hidden', !areDetailsExpanded));
       setT('btnText', areDetailsExpanded ? 'Collapse All' : 'Show All');
+      const icon = $('btnIcon');
+      if (icon) {
+        icon.innerHTML = areDetailsExpanded
+          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>'
+          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
+      }
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
