@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,152 +9,64 @@
   <title>Performance Dashboard - Email & Advertisers</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-
-    .theme-header {
-      background-color: #1e40af;
-    }
-
-    .theme-header-ops {
-      background-color: #dbeafe;
-    }
-
-    .theme-header-aff {
-      background-color: #1e293b;
-    }
-
-    .excel-table {
-      border-collapse: collapse !important;
-      border: 1.5px solid #64748b !important;
-      width: 100%;
-    }
-
-    .excel-table th,
-    .excel-table td {
-      border: 1px solid #94a3b8 !important;
-    }
-
-    .excel-table thead th {
-      border: 1px solid #1e3a8a !important;
-      border-bottom: 2px solid #0f172a !important;
-    }
-
-    .excel-table thead tr.sort-row th {
-      border: none !important;
-      background: #fff !important;
-      padding: 8px !important;
-    }
-
-    .esp-table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    .esp-table th {
-      background: #485c44;
-      color: #fff;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      border-bottom: 2px solid #3b4c37;
-    }
-
-    .esp-table tbody tr.esp-summary-row {
-      background: #f8faf8;
-      border-bottom: 1.5px solid #cbd5e1;
-      font-weight: 600;
-    }
-
-    .esp-table tbody tr.esp-summary-row:hover {
-      background: #eef2ee;
-    }
-
-    .esp-table tbody tr.domain-row {
-      border-bottom: 1px solid #f1f5f9;
-      background: #fff;
-    }
-
-    .esp-table tbody tr.domain-row:hover {
-      background: #f8fafc;
-    }
-
-    .esp-table tfoot {
-      border-top: 2.5px solid #485c44;
-      background: #fff;
-    }
+    body { font-family: 'Inter', sans-serif; }
+    .theme-header { background-color: #1e40af; }
+    .theme-header-ops { background-color: #dbeafe; }
+    .theme-header-aff { background-color: #1e293b; }
+    .excel-table { border-collapse: collapse !important; border: 1.5px solid #64748b !important; width: 100%; }
+    .excel-table th, .excel-table td { border: 1px solid #94a3b8 !important; }
+    .excel-table thead th { border: 1px solid #1e3a8a !important; border-bottom: 2px solid #0f172a !important; }
+    .excel-table thead tr.sort-row th { border: none !important; background: #fff !important; padding: 8px !important; }
+    .esp-table { border-collapse: collapse; width: 100%; }
+    .esp-table th { background: #485c44; color: #fff; font-weight: 700; letter-spacing: 0.05em; border-bottom: 2px solid #3b4c37; }
+    .esp-table tbody tr.esp-summary-row { background: #f8faf8; border-bottom: 1.5px solid #cbd5e1; font-weight: 600; }
+    .esp-table tbody tr.esp-summary-row:hover { background: #eef2ee; }
+    .esp-table tbody tr.domain-row { border-bottom: 1px solid #f1f5f9; background: #fff; }
+    .esp-table tbody tr.domain-row:hover { background: #f8fafc; }
+    .esp-table tfoot { border-top: 2.5px solid #485c44; background: #fff; }
   </style>
 </head>
-
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen p-4 md:p-8">
   <div class="max-w-7xl mx-auto space-y-8">
-
     <!-- HEADER & CALENDAR -->
-    <header
-      class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
+    <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
       <div class="flex flex-col md:flex-row md:items-center gap-5 flex-wrap">
         <div>
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span>
-            <h1 id="dashTitle" class="text-2xl font-bold text-slate-900 tracking-tight">Performance Dashboard</h1>
-          </div>
-          <p class="text-sm text-slate-500 mt-0.5">Email Deliverability by ESP (CSVs) & Advertiser Conversions
-            (Multi-Month)</p>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span><h1 id="dashTitle" class="text-2xl font-bold text-slate-900 tracking-tight">Performance Dashboard</h1></div>
+          <p class="text-sm text-slate-500 mt-0.5">Email Deliverability by ESP (CSVs) & Advertiser Conversions (Multi-Month)</p>
         </div>
         <div class="relative flex items-center gap-3">
           <div class="flex items-center gap-1.5">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">FROM</span>
-            <button type="button" id="fromPillBtn" onclick="toggleCustomCalendar('from')"
-              class="flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs transition-all hover:bg-slate-50 cursor-pointer focus:outline-none">
+            <button type="button" id="fromPillBtn" onclick="toggleCustomCalendar('from')" class="flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs transition-all hover:bg-slate-50 cursor-pointer focus:outline-none">
               <span id="fromDisplay" class="text-xs font-bold text-slate-800 font-mono tracking-tight">--/--/----</span>
-              <svg class="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
+              <svg class="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </button>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">TO</span>
-            <button type="button" id="toPillBtn" onclick="toggleCustomCalendar('to')"
-              class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs transition-all hover:border-slate-400 cursor-pointer focus:outline-none">
+            <button type="button" id="toPillBtn" onclick="toggleCustomCalendar('to')" class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs transition-all hover:border-slate-400 cursor-pointer focus:outline-none">
               <span id="toDisplay" class="text-xs font-bold text-slate-800 font-mono tracking-tight">--/--/----</span>
-              <svg class="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
+              <svg class="w-3.5 h-3.5 text-slate-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </button>
           </div>
-          <div id="customCalendarPopup"
-            class="hidden absolute top-12 left-0 z-50 w-72 bg-white rounded-[22px] p-5 shadow-2xl border border-slate-100 transition-all select-none">
+          <div id="customCalendarPopup" class="hidden absolute top-12 left-0 z-50 w-72 bg-white rounded-[22px] p-5 shadow-2xl border border-slate-100 transition-all select-none">
             <div class="flex items-center justify-between mb-4">
-              <button type="button" onclick="navigateMonth(-1)"
-                class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"><svg class="w-4 h-4"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
-                </svg></button>
-              <span id="calHeaderTitle" class="text-xs font-extrabold text-[#0f172a] uppercase tracking-wider">--
-                ----</span>
-              <button type="button" id="calNextBtn" onclick="navigateMonth(1)"
-                class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"><svg class="w-4 h-4"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
-                </svg></button>
+              <button type="button" onclick="navigateMonth(-1)" class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg></button>
+              <span id="calHeaderTitle" class="text-xs font-extrabold text-[#0f172a] uppercase tracking-wider">-- ----</span>
+              <button type="button" id="calNextBtn" onclick="navigateMonth(1)" class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg></button>
             </div>
-            <div class="grid grid-cols-7 gap-1 text-center mb-2 text-[11px] font-extrabold text-slate-800">
-              <span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span><span>SU</span>
-            </div>
+            <div class="grid grid-cols-7 gap-1 text-center mb-2 text-[11px] font-extrabold text-slate-800"><span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span><span>SU</span></div>
             <div id="calDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs font-bold"></div>
           </div>
         </div>
       </div>
-      <span id="dataStatusBadge"
-        class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"></span>
+      <span id="dataStatusBadge" class="hidden inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200"></span>
     </header>
 
-    <!-- TEAM PERFORMANCE OVERVIEW -->
+    <!-- TEAM PERFORMANCE -->
     <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       <h2 class="text-base font-bold text-slate-900 mb-4 tracking-tight">Team Performance</h2>
       <div class="overflow-x-auto">
@@ -169,44 +80,17 @@
             </tr>
             <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase h-8 bg-white">
               <th class="px-3 border-r border-slate-100"></th>
-              <th class="px-2.5 py-2">BUDGET</th>
-              <th class="px-2.5 py-2">SIGNUPS</th>
-              <th class="px-2.5 py-2">USERS</th>
-              <th class="px-2.5 py-2">REVENUE</th>
-              <th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th>
-              <th class="px-2.5 py-2">BUDGET</th>
-              <th class="px-2.5 py-2">SIGNUPS</th>
-              <th class="px-2.5 py-2">USERS</th>
-              <th class="px-2.5 py-2">REVENUE</th>
-              <th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th>
-              <th class="px-2.5 py-2">BUDGET</th>
-              <th class="px-2.5 py-2">SIGNUPS</th>
-              <th class="px-2.5 py-2">USERS</th>
-              <th class="px-2.5 py-2">REVENUE</th>
-              <th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th>
-              <th class="px-2.5 py-2">ROI</th>
+              <th class="px-2.5 py-2">BUDGET</th><th class="px-2.5 py-2">SIGNUPS</th><th class="px-2.5 py-2">USERS</th><th class="px-2.5 py-2">REVENUE</th><th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th>
+              <th class="px-2.5 py-2">BUDGET</th><th class="px-2.5 py-2">SIGNUPS</th><th class="px-2.5 py-2">USERS</th><th class="px-2.5 py-2">REVENUE</th><th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th>
+              <th class="px-2.5 py-2">BUDGET</th><th class="px-2.5 py-2">SIGNUPS</th><th class="px-2.5 py-2">USERS</th><th class="px-2.5 py-2">REVENUE</th><th class="px-2.5 py-2 border-r border-slate-200">PROFIT</th><th class="px-2.5 py-2">ROI</th>
             </tr>
           </thead>
           <tbody class="text-xs font-bold text-slate-800 divide-y divide-slate-100">
             <tr class="h-14 hover:bg-slate-50/70">
-              <td class="text-left px-3 border-r border-slate-100"><span
-                  class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#edf2fe] text-[#2563eb]">EMAIL</span></td>
-              <td id="teamKpiBudget" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamKpiSignups" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamKpiUsers" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamKpiRevenue" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamKpiProfit" class="px-2.5 py-3 text-sm border-r border-slate-200">$0</td>
-              <td id="teamMtdBudget" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamMtdSignups" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamMtdUsers" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamMtdRevenue" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamMtdProfit" class="px-2.5 py-3 text-sm border-r border-slate-200">$0</td>
-              <td id="teamRrBudget" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamRrSignups" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamRrUsers" class="px-2.5 py-3 text-sm">0</td>
-              <td id="teamRrRevenue" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamRrProfit" class="px-2.5 py-3 text-sm">$0</td>
-              <td id="teamRrRoi" class="px-2.5 py-3 text-slate-900 text-sm">0:0</td>
+              <td class="text-left px-3 border-r border-slate-100"><span class="px-3.5 py-1 rounded-full text-xs font-bold bg-[#edf2fe] text-[#2563eb]">EMAIL</span></td>
+              <td id="teamKpiBudget" class="px-2.5 py-3 text-sm">$0</td><td id="teamKpiSignups" class="px-2.5 py-3 text-sm">0</td><td id="teamKpiUsers" class="px-2.5 py-3 text-sm">0</td><td id="teamKpiRevenue" class="px-2.5 py-3 text-sm">$0</td><td id="teamKpiProfit" class="px-2.5 py-3 text-sm border-r border-slate-200">$0</td>
+              <td id="teamMtdBudget" class="px-2.5 py-3 text-sm">$0</td><td id="teamMtdSignups" class="px-2.5 py-3 text-sm">0</td><td id="teamMtdUsers" class="px-2.5 py-3 text-sm">0</td><td id="teamMtdRevenue" class="px-2.5 py-3 text-sm">$0</td><td id="teamMtdProfit" class="px-2.5 py-3 text-sm border-r border-slate-200">$0</td>
+              <td id="teamRrBudget" class="px-2.5 py-3 text-sm">$0</td><td id="teamRrSignups" class="px-2.5 py-3 text-sm">0</td><td id="teamRrUsers" class="px-2.5 py-3 text-sm">0</td><td id="teamRrRevenue" class="px-2.5 py-3 text-sm">$0</td><td id="teamRrProfit" class="px-2.5 py-3 text-sm">$0</td><td id="teamRrRoi" class="px-2.5 py-3 text-slate-900 text-sm">0:0</td>
             </tr>
           </tbody>
         </table>
@@ -216,83 +100,21 @@
     <!-- SECTION 1: ESP & ENGAGEMENT -->
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-2 gap-2">
-        <div class="flex items-center gap-2"><span
-            class="px-2.5 py-0.5 rounded bg-blue-800 text-white text-xs font-bold uppercase">Section 1</span>
-          <h2 class="text-lg font-bold text-slate-800">ESP Deliverability & Engagement</h2>
-        </div>
-        <span id="dateRangeNotice"
-          class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">Filtered
-          Period</span>
+        <div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded bg-blue-800 text-white text-xs font-bold uppercase">Section 1</span><h2 class="text-lg font-bold text-slate-800">ESP Deliverability & Engagement</h2></div>
+        <span id="dateRangeNotice" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">Filtered Period</span>
       </div>
 
-      <!-- KPI CARDS -->
       <section class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-10 gap-3 text-xs">
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Delivered</p>
-          <p id="kpiDelivered" class="text-xl font-bold text-slate-900 mt-1">0</p><span
-            class="text-[10px] text-slate-400 mt-1">Filtered sent</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Open</p>
-          <p id="kpiOpened" class="text-xl font-bold text-emerald-700 mt-1">0</p><span id="kpiOpenRate"
-            class="text-[10px] font-semibold text-emerald-600 mt-1">0.00% Open Rate</span>
-        </div>
-
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Click</p>
-          <p id="kpiClicked" class="text-xl font-bold text-sky-700 mt-1">0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]">
-            <span id="kpiClickRate" class="font-semibold text-sky-600">0.00% Click Rate</span>
-            <span class="text-slate-300">•</span>
-            <span id="cardRrClicksSub" class="font-bold text-slate-900">RR: 0</span>
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Bounced</p>
-          <p id="kpiBounced" class="text-xl font-bold text-rose-600 mt-1">0</p><span id="kpiBounceRate"
-            class="text-[10px] text-slate-400 mt-1">0.00% bounce</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Unsub / Block</p>
-          <p id="kpiUnsub" class="text-xl font-bold text-purple-700 mt-1">0</p><span
-            class="text-[10px] text-slate-400 mt-1">Total opt-outs</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Registration</p>
-          <p id="kpiSignups" class="text-xl font-bold text-amber-600 mt-1">0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiSignupsSub"
-              class="font-bold text-slate-900">KPI: 0</span><span class="text-slate-300">•</span><span
-              id="cardRrSignupsSub" class="font-bold">RR: 0</span></div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Users</p>
-          <p id="kpiUsers" class="text-xl font-bold text-indigo-600 mt-1">0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiUsersSub"
-              class="font-bold text-slate-900">KPI: 0</span><span class="text-slate-300">•</span><span
-              id="cardRrUsersSub" class="font-bold">RR: 0</span></div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Revenue</p>
-          <p id="kpiRevenue" class="text-xl font-bold text-emerald-600 mt-1">$0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiRevenueSub"
-              class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span
-              id="cardRrRevenueSub" class="font-bold">RR: $0</span></div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Budget</p>
-          <p id="kpiBudget" class="text-xl font-bold text-slate-900 mt-1">$0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiBudgetSub"
-              class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span
-              id="cardRrBudgetSub" class="font-bold">RR: $0</span></div>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <p class="text-[11px] font-semibold text-slate-500 uppercase">Profit</p>
-          <p id="kpiProfit" class="text-xl font-bold text-emerald-600 mt-1">$0</p>
-          <div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiProfitSub"
-              class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span
-              id="cardRrProfitSub" class="font-bold">RR: $0</span></div>
-        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Delivered</p><p id="kpiDelivered" class="text-xl font-bold text-slate-900 mt-1">0</p><span class="text-[10px] text-slate-400 mt-1">Filtered sent</span></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Open</p><p id="kpiOpened" class="text-xl font-bold text-emerald-700 mt-1">0</p><span id="kpiOpenRate" class="text-[10px] font-semibold text-emerald-600 mt-1">0.00% Open Rate</span></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Click</p><p id="kpiClicked" class="text-xl font-bold text-sky-700 mt-1">0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="kpiClickRate" class="font-semibold text-sky-600">0.00% Click Rate</span><span class="text-slate-300">•</span><span id="cardRrClicksSub" class="font-bold text-slate-900">RR: 0</span></div></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Bounced</p><p id="kpiBounced" class="text-xl font-bold text-rose-600 mt-1">0</p><span id="kpiBounceRate" class="text-[10px] text-slate-400 mt-1">0.00% bounce</span></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Unsub / Block</p><p id="kpiUnsub" class="text-xl font-bold text-purple-700 mt-1">0</p><span class="text-[10px] text-slate-400 mt-1">Total opt-outs</span></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Registration</p><p id="kpiSignups" class="text-xl font-bold text-amber-600 mt-1">0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiSignupsSub" class="font-bold text-slate-900">KPI: 0</span><span class="text-slate-300">•</span><span id="cardRrSignupsSub" class="font-bold">RR: 0</span></div></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Users</p><p id="kpiUsers" class="text-xl font-bold text-indigo-600 mt-1">0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiUsersSub" class="font-bold text-slate-900">KPI: 0</span><span class="text-slate-300">•</span><span id="cardRrUsersSub" class="font-bold">RR: 0</span></div></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Revenue</p><p id="kpiRevenue" class="text-xl font-bold text-emerald-600 mt-1">$0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiRevenueSub" class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span id="cardRrRevenueSub" class="font-bold">RR: $0</span></div></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Budget</p><p id="kpiBudget" class="text-xl font-bold text-slate-900 mt-1">$0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiBudgetSub" class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span id="cardRrBudgetSub" class="font-bold">RR: $0</span></div></div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between"><p class="text-[11px] font-semibold text-slate-500 uppercase">Profit</p><p id="kpiProfit" class="text-xl font-bold text-emerald-600 mt-1">$0</p><div class="flex items-center gap-1 mt-1 text-[10px]"><span id="cardKpiProfitSub" class="font-bold text-slate-900">KPI: $0</span><span class="text-slate-300">•</span><span id="cardRrProfitSub" class="font-bold">RR: $0</span></div></div>
       </section>
 
       <!-- ESP TABLE -->
@@ -300,187 +122,80 @@
         <div class="px-6 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div class="flex items-center gap-3">
             <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Email Performance by ESP</h3>
-            <button id="toggleTableBtn" onclick="toggleTableDetails()"
-              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#485c44] hover:bg-[#3b4c37] text-white shadow-sm cursor-pointer">
-              <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-              <span id="btnText">Show All</span>
+            <button id="toggleTableBtn" onclick="toggleTableDetails()" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#485c44] hover:bg-[#3b4c37] text-white shadow-sm cursor-pointer">
+              <svg id="btnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg><span id="btnText">Show All</span>
             </button>
           </div>
           <span id="dateRangeSubtitle" class="text-xs text-slate-600 font-medium">Select period</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm text-right esp-table">
-            <thead>
-              <tr>
-                <th class="py-3 px-4 text-left font-bold text-xs uppercase">ESP ▲</th>
-                <th class="py-3 px-4">VOLUME</th>
-                <th class="py-3 px-4">Delivered</th>
-                <th class="py-3 px-4">Soft Bounce</th>
-                <th class="py-3 px-4">Hard Bounce</th>
-                <th class="py-3 px-4">Opened</th>
-                <th class="py-3 px-4">Clicks</th>
-                <th class="py-3 px-4">SIGNUPS</th>
-                <th class="py-3 px-4">PLAYERS</th>
-              </tr>
-            </thead>
-            <tbody id="espTableBody" class="text-slate-700"></tbody>
-            <tfoot id="espTableFoot"></tfoot>
+            <thead><tr><th class="py-3 px-4 text-left font-bold text-xs uppercase">ESP ▲</th><th class="py-3 px-4">VOLUME</th><th class="py-3 px-4">Delivered</th><th class="py-3 px-4">Soft Bounce</th><th class="py-3 px-4">Hard Bounce</th><th class="py-3 px-4">Opened</th><th class="py-3 px-4">Clicks</th><th class="py-3 px-4">SIGNUPS</th><th class="py-3 px-4">PLAYERS</th></tr></thead>
+            <tbody id="espTableBody" class="text-slate-700"></tbody><tfoot id="espTableFoot"></tfoot>
           </table>
         </div>
       </section>
 
-      <!-- TABLA: ESP / IP BREAKDOWN CON BOTÓN SHOW ALL / COLLAPSE ALL -->
+      <!-- ESP / IP BREAKDOWN -->
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <div class="flex items-center gap-3">
               <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">ESP / IP Breakdown</h3>
-              <button id="toggleEspIpBtn" onclick="toggleEspIpBreakdownDetails()" type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#1e293b] hover:bg-slate-700 text-white shadow-sm cursor-pointer transition-colors">
-                <svg id="espIpBtnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-                <span id="espIpBtnText">Show All</span>
+              <button id="toggleEspIpBtn" onclick="toggleEspIpBreakdownDetails()" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#1e293b] hover:bg-slate-700 text-white shadow-sm cursor-pointer transition-colors">
+                <svg id="espIpBtnIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg><span id="espIpBtnText">Show All</span>
               </button>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">Sign Ups & FTDs distribution by ESP / IP, Advertisers and Brands
-            </p>
+            <p class="text-xs text-slate-500 mt-0.5">Sign Ups & FTDs distribution by ESP / IP, Advertisers and Brands</p>
           </div>
         </div>
         <div class="overflow-x-auto">
           <table id="espIpBreakdownTable" class="w-full text-sm excel-table">
-            <thead>
-              <tr class="theme-header-aff text-white text-xs uppercase tracking-wider font-semibold">
-                <th class="py-2.5 px-4 text-left">ESP / IP</th>
-                <th class="py-2.5 px-4 text-left">Advertisers</th>
-                <th class="py-2.5 px-4 text-left">Brands</th>
-                <th class="py-2.5 px-4 text-right">Sign Ups</th>
-                <th class="py-2.5 px-4 text-right">FTDs</th>
-              </tr>
-            </thead>
+            <thead><tr class="theme-header-aff text-white text-xs uppercase tracking-wider font-semibold"><th class="py-2.5 px-4 text-left">ESP / IP</th><th class="py-2.5 px-4 text-left">Advertisers</th><th class="py-2.5 px-4 text-left">Brands</th><th class="py-2.5 px-4 text-right">Sign Ups</th><th class="py-2.5 px-4 text-right">FTDs</th></tr></thead>
             <tbody id="espIpBreakdownTableBody" class="text-slate-700"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold text-slate-900">
-              <tr>
-                <td colspan="3" class="py-2.5 px-4 text-left uppercase">Overall Grand Total</td>
-                <td id="espIpGrandSignups" class="py-2.5 px-4 text-right font-mono text-amber-600">0</td>
-                <td id="espIpGrandFtds" class="py-2.5 px-4 text-right font-mono text-indigo-600">0</td>
-              </tr>
-            </tfoot>
+            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold text-slate-900"><tr><td colspan="3" class="py-2.5 px-4 text-left uppercase">Overall Grand Total</td><td id="espIpGrandSignups" class="py-2.5 px-4 text-right font-mono text-amber-600">0</td><td id="espIpGrandFtds" class="py-2.5 px-4 text-right font-mono text-indigo-600">0</td></tr></tfoot>
           </table>
         </div>
       </section>
 
-      <!-- CHARTS SECTION 1 -->
+      <!-- CHARTS -->
       <div class="space-y-6">
-        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">1. ESP Deliverability & Engagement Charts
-        </h3>
+        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider">1. ESP Deliverability & Engagement Charts</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Delivered vs. Open</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Volume comparison by ESP</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartEspVolumen"></canvas></div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Clicks by ESP</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Exact click counts</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartEspClicks"></canvas></div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Open Rate (%) by ESP</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Open efficiency per IP</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartEspOpenRate"></canvas></div>
-          </div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Delivered vs. Open</h4><p class="text-[11px] text-slate-500 mb-2">Volume comparison by ESP</p></div><div class="relative h-52"><canvas id="chartEspVolumen"></canvas></div></div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Clicks by ESP</h4><p class="text-[11px] text-slate-500 mb-2">Exact click counts</p></div><div class="relative h-52"><canvas id="chartEspClicks"></canvas></div></div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Open Rate (%) by ESP</h4><p class="text-[11px] text-slate-500 mb-2">Open efficiency per IP</p></div><div class="relative h-52"><canvas id="chartEspOpenRate"></canvas></div></div>
         </div>
-        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider pt-2">2. Mailbox Domain Deliverability
-          Charts</h3>
+        <h3 class="text-sm font-bold text-slate-700 uppercase tracking-wider pt-2">2. Mailbox Domain Deliverability Charts</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Delivered by Domain (%)</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Distribution & share by mailbox domain</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartDomainDelivered"></canvas></div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Open Rate (%) by Domain</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Open rate by domain</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartDomainOpenRate"></canvas></div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between">
-            <div>
-              <h4 class="text-xs font-bold text-slate-900 uppercase">Clicks by Domain</h4>
-              <p class="text-[11px] text-slate-500 mb-2">Clicks generated per domain</p>
-            </div>
-            <div class="relative h-52"><canvas id="chartDomainClicks"></canvas></div>
-          </div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Delivered by Domain (%)</h4><p class="text-[11px] text-slate-500 mb-2">Distribution & share by mailbox domain</p></div><div class="relative h-52"><canvas id="chartDomainDelivered"></canvas></div></div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Open Rate (%) by Domain</h4><p class="text-[11px] text-slate-500 mb-2">Open rate by domain</p></div><div class="relative h-52"><canvas id="chartDomainOpenRate"></canvas></div></div>
+          <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-72 flex flex-col justify-between"><div><h4 class="text-xs font-bold text-slate-900 uppercase">Clicks by Domain</h4><p class="text-[11px] text-slate-500 mb-2">Clicks generated per domain</p></div><div class="relative h-52"><canvas id="chartDomainClicks"></canvas></div></div>
         </div>
       </div>
     </div>
 
-    <!-- OPS TEAM SECTION -->
+    <!-- OPS TEAM -->
     <div class="space-y-6 pt-2">
       <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div class="flex items-center gap-2"><span
-            class="px-2.5 py-0.5 rounded bg-indigo-800 text-white text-xs font-bold uppercase">Team Ops</span>
-          <h2 class="text-lg font-bold text-slate-800">Email Operations Performance</h2>
-        </div>
-        <span id="opsPeriodBadge"
-          class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">Filtered
-          Period</span>
+        <div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded bg-indigo-800 text-white text-xs font-bold uppercase">Team Ops</span><h2 class="text-lg font-bold text-slate-800">Email Operations Performance</h2></div>
+        <span id="opsPeriodBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">Filtered Period</span>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <h3 class="text-base font-bold text-slate-900 mb-3">Registrations by team</h3>
           <table class="w-full text-sm text-right excel-table">
-            <thead class="theme-header-aff text-white text-xs uppercase font-semibold">
-              <tr>
-                <th class="py-2 px-3 text-left">Advertiser</th>
-                <th class="py-2 px-3">Andrea ('a')</th>
-                <th class="py-2 px-3">Jessie ('j')</th>
-                <th class="py-2 px-3">Total</th>
-              </tr>
-            </thead>
+            <thead class="theme-header-aff text-white text-xs uppercase font-semibold"><tr><th class="py-2 px-3 text-left">Advertiser</th><th class="py-2 px-3">Andrea ('a')</th><th class="py-2 px-3">Jessie ('j')</th><th class="py-2 px-3">Total</th></tr></thead>
             <tbody id="opsSignupsTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold">
-              <tr>
-                <td class="py-2 px-3 text-left">Grand Total</td>
-                <td id="opsSignupsAndreaTotal" class="font-mono text-amber-600">0</td>
-                <td id="opsSignupsJessieTotal" class="font-mono text-amber-600">0</td>
-                <td id="opsSignupsGrandTotal" class="font-mono text-amber-700">0</td>
-              </tr>
-            </tfoot>
+            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td class="py-2 px-3 text-left">Grand Total</td><td id="opsSignupsAndreaTotal" class="font-mono text-amber-600">0</td><td id="opsSignupsJessieTotal" class="font-mono text-amber-600">0</td><td id="opsSignupsGrandTotal" class="font-mono text-amber-700">0</td></tr></tfoot>
           </table>
         </div>
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
           <h3 class="text-base font-bold text-slate-900 mb-3">Users / FTD by team</h3>
           <table class="w-full text-sm text-right excel-table">
-            <thead class="theme-header-aff text-white text-xs uppercase font-semibold">
-              <tr>
-                <th class="py-2 px-3 text-left">Advertiser</th>
-                <th class="py-2 px-3">Andrea ('a')</th>
-                <th class="py-2 px-3">Jessie ('j')</th>
-                <th class="py-2 px-3">Total</th>
-              </tr>
-            </thead>
+            <thead class="theme-header-aff text-white text-xs uppercase font-semibold"><tr><th class="py-2 px-3 text-left">Advertiser</th><th class="py-2 px-3">Andrea ('a')</th><th class="py-2 px-3">Jessie ('j')</th><th class="py-2 px-3">Total</th></tr></thead>
             <tbody id="opsUsersTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold">
-              <tr>
-                <td class="py-2 px-3 text-left">Grand Total</td>
-                <td id="opsUsersAndreaTotal" class="font-mono text-indigo-600">0</td>
-                <td id="opsUsersJessieTotal" class="font-mono text-indigo-600">0</td>
-                <td id="opsUsersGrandTotal" class="font-mono text-indigo-700">0</td>
-              </tr>
-            </tfoot>
+            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td class="py-2 px-3 text-left">Grand Total</td><td id="opsUsersAndreaTotal" class="font-mono text-indigo-600">0</td><td id="opsUsersJessieTotal" class="font-mono text-indigo-600">0</td><td id="opsUsersGrandTotal" class="font-mono text-indigo-700">0</td></tr></tfoot>
           </table>
         </div>
       </div>
@@ -488,111 +203,37 @@
 
     <!-- SECTION 2: ADVERTISER & BRAND -->
     <div class="space-y-6 pt-4">
-      <div class="flex items-center gap-2 border-b border-slate-200 pb-2"><span
-          class="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-bold uppercase">Section 2</span>
-        <h2 class="text-lg font-bold text-slate-800">Advertiser Performance & Revenue</h2>
-      </div>
-
-      <!-- ADVERTISER TABLE -->
+      <div class="flex items-center gap-2 border-b border-slate-200 pb-2"><span class="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-bold uppercase">Section 2</span><h2 class="text-lg font-bold text-slate-800">Advertiser Performance & Revenue</h2></div>
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div>
-            <h3 class="text-sm font-bold text-slate-800 uppercase">Advertiser Breakdown Table</h3>
-            <p class="text-xs text-slate-500">Metrics: Conversion S2P Ratio (1:X) & Revenue</p>
-          </div>
-          <button onclick="resetTable('advertiserTable')"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear
-            / Reset Table</button>
+          <div><h3 class="text-sm font-bold text-slate-800 uppercase">Advertiser Breakdown Table</h3><p class="text-xs text-slate-500">Metrics: Conversion S2P Ratio (1:X) & Revenue</p></div>
+          <button onclick="resetTable('advertiserTable')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear / Reset Table</button>
         </div>
         <div class="overflow-x-auto">
           <table id="advertiserTable" class="w-full text-sm text-right excel-table">
             <thead>
-              <tr class="sort-row">
-                <th class="w-1/4"></th>
-                <th><button onclick="sortTable('advertiserTable', 1, this, 'num')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('advertiserTable', 2, this, 'num')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('advertiserTable', 3, this, 'currency')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('advertiserTable', 4, this, 'ratio')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-              </tr>
-              <tr class="theme-header-aff text-white text-xs uppercase font-semibold">
-                <th class="py-2.5 px-4 text-left">Advertiser</th>
-                <th class="py-2.5 px-4">Sign Ups</th>
-                <th class="py-2.5 px-4">Users</th>
-                <th class="py-2.5 px-4">Revenue</th>
-                <th class="py-2.5 px-4">S2P (Ratio)</th>
-              </tr>
+              <tr class="sort-row"><th class="w-1/4"></th><th><button onclick="sortTable('advertiserTable', 1, this, 'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable', 2, this, 'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable', 3, this, 'currency')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable', 4, this, 'ratio')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th></tr>
+              <tr class="theme-header-aff text-white text-xs uppercase font-semibold"><th class="py-2.5 px-4 text-left">Advertiser</th><th class="py-2.5 px-4">Sign Ups</th><th class="py-2.5 px-4">Users</th><th class="py-2.5 px-4">Revenue</th><th class="py-2.5 px-4">S2P (Ratio)</th></tr>
             </thead>
             <tbody id="advertiserTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold">
-              <tr>
-                <td colspan="1" class="py-2.5 px-4 text-left">Grand total</td>
-                <td id="advGrandSignups" class="font-mono text-amber-600">0</td>
-                <td id="advGrandUsers" class="font-mono text-indigo-600">0</td>
-                <td id="advGrandRevenue" class="font-mono text-emerald-600">$0</td>
-                <td id="advGrandS2p" class="font-mono text-emerald-600">0:0</td>
-              </tr>
-            </tfoot>
+            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td colspan="1" class="py-2.5 px-4 text-left">Grand total</td><td id="advGrandSignups" class="font-mono text-amber-600">0</td><td id="advGrandUsers" class="font-mono text-indigo-600">0</td><td id="advGrandRevenue" class="font-mono text-emerald-600">$0</td><td id="advGrandS2p" class="font-mono text-emerald-600">0:0</td></tr></tfoot>
           </table>
         </div>
       </section>
 
-      <!-- BRAND TABLE -->
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div>
-            <h3 class="text-sm font-bold text-slate-800 uppercase">Brand Breakdown Table</h3>
-            <p class="text-xs text-slate-500">Performance by Brand & Conversion S2P Ratio</p>
-          </div>
-          <button onclick="resetTable('brandTable')"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear
-            / Reset Table</button>
+          <div><h3 class="text-sm font-bold text-slate-800 uppercase">Brand Breakdown Table</h3><p class="text-xs text-slate-500">Performance by Brand & Conversion S2P Ratio</p></div>
+          <button onclick="resetTable('brandTable')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear / Reset Table</button>
         </div>
         <div class="overflow-x-auto">
           <table id="brandTable" class="w-full text-sm text-right excel-table">
             <thead>
-              <tr class="sort-row">
-                <th class="w-1/4"></th>
-                <th></th>
-                <th><button onclick="sortTable('brandTable', 2, this, 'num')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('brandTable', 3, this, 'num')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('brandTable', 4, this, 'currency')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-                <th><button onclick="sortTable('brandTable', 5, this, 'ratio')"
-                    class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button>
-                </th>
-              </tr>
-              <tr class="theme-header-aff text-white text-xs uppercase font-semibold">
-                <th class="py-2.5 px-4 text-left">Brand</th>
-                <th class="py-2.5 px-4 text-left">Advertiser</th>
-                <th class="py-2.5 px-4">Signups</th>
-                <th class="py-2.5 px-4">FTD / Users</th>
-                <th class="py-2.5 px-4">Revenue</th>
-                <th class="py-2.5 px-4">S2P (Ratio)</th>
-              </tr>
+              <tr class="sort-row"><th class="w-1/4"></th><th></th><th><button onclick="sortTable('brandTable', 2, this, 'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('brandTable', 3, this, 'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('brandTable', 4, this, 'currency')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('brandTable', 5, this, 'ratio')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th></tr>
+              <tr class="theme-header-aff text-white text-xs uppercase font-semibold"><th class="py-2.5 px-4 text-left">Brand</th><th class="py-2.5 px-4 text-left">Advertiser</th><th class="py-2.5 px-4">Signups</th><th class="py-2.5 px-4">FTD / Users</th><th class="py-2.5 px-4">Revenue</th><th class="py-2.5 px-4">S2P (Ratio)</th></tr>
             </thead>
             <tbody id="brandTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold">
-              <tr>
-                <td colspan="2" class="py-2.5 px-4 text-left">Grand total</td>
-                <td id="brandGrandSignups" class="font-mono text-amber-600">0</td>
-                <td id="brandGrandUsers" class="font-mono text-indigo-600">0</td>
-                <td id="brandGrandRevenue" class="font-mono text-emerald-600">$0</td>
-                <td id="brandGrandS2p" class="font-mono text-emerald-600">0:0</td>
-              </tr>
-            </tfoot>
+            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td colspan="2" class="py-2.5 px-4 text-left">Grand total</td><td id="brandGrandSignups" class="font-mono text-amber-600">0</td><td id="brandGrandUsers" class="font-mono text-indigo-600">0</td><td id="brandGrandRevenue" class="font-mono text-emerald-600">$0</td><td id="brandGrandS2p" class="font-mono text-emerald-600">0:0</td></tr></tfoot>
           </table>
         </div>
       </section>
@@ -600,216 +241,113 @@
   </div>
 
   <script>
-    const $ = id => document.getElementById(id);
-    const setT = (id, val) => { const el = $(id); if (el) el.textContent = val; };
-    const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+    const $ = id => document.getElementById(id), setT = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+    const MONTH_KEYS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
     const MONTH_NAMES = MONTH_KEYS.map(m => m.toUpperCase());
-
-    let globalLoadedMonths = [], areDetailsExpanded = false, chartRefs = {};
+    const MIN_ALLOWED_DATE = '2026-07-01', START_YEAR = 2026;
+    let globalLoadedMonths = [], areDetailsExpanded = false, isEspIpExpanded = false, cachedDetailedBreakdownRows = [];
+    let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1;
     const initialTableState = {}, tableSortDirections = {}, csvCache = {};
 
-    let isEspIpExpanded = false;
-    let cachedDetailedBreakdownRows = [];
-    let preferredJsonPathIdx = -1;
-    let preferredCsvPathIdx = -1;
-
-    const MIN_ALLOWED_DATE = '2026-07-01';
-    const START_YEAR = 2026;
-
-    const isExcludedEsp = name => {
-      const u = (name || '').toUpperCase();
-      return u.includes('CAM') || u.includes('CAMPAIGNER') || u.includes('SMPT') || u.includes('SMTP');
-    };
-
+    const isExcludedEsp = n => /CAM|CAMPAIGNER|SMPT|SMTP/i.test(n || '');
     const getCurrentYear = () => new Date().getFullYear();
-
-    const getTodayIso = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    };
-
+    const getTodayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
     const normDate = d => {
-      if (!d) return '';
-      const str = String(d).trim();
-      if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
-        const [mm, dd, yyyy] = str.split('/');
-        return `${yyyy}-${mm}-${dd}`;
-      }
-      return str;
+      const s = String(d || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) { const [mm, dd, yy] = s.split('/'); return `${yy}-${mm}-${dd}`; }
+      return s;
     };
-
-    function extractDayUsers(r) {
-      if (!r) return 0;
-      const direct = r.users ?? r.ftds ?? r.players ?? 0;
-      if (direct > 0) return direct;
-      const advUsers = Object.values(r.advertisers || {}).reduce((acc, v) => acc + (v.users ?? v.ftds ?? v.players ?? 0), 0);
-      if (advUsers > 0) return advUsers;
-      const brandUsers = Object.values(r.brands || {}).reduce((acc, v) => acc + (v.users ?? v.ftds ?? v.players ?? 0), 0);
-      if (brandUsers > 0) return brandUsers;
-      const espDayUsers = Array.isArray(r.esp_ip_breakdown)
-        ? r.esp_ip_breakdown.reduce((acc, it) => acc + (!it.is_total ? (it.ftds ?? it.users ?? 0) : 0), 0)
-        : 0;
-      if (espDayUsers > 0) return espDayUsers;
-      return r.ops ? ((r.ops.andrea?.users || 0) + (r.ops.jessie?.users || 0)) : 0;
-    }
+    const extractDayUsers = r => !r ? 0 : (
+      (r.users ?? r.ftds ?? r.players ?? 0) ||
+      Object.values(r.advertisers || {}).reduce((a, v) => a + (v.users ?? v.ftds ?? v.players ?? 0), 0) ||
+      Object.values(r.brands || {}).reduce((a, v) => a + (v.users ?? v.ftds ?? v.players ?? 0), 0) ||
+      (Array.isArray(r.esp_ip_breakdown) ? r.esp_ip_breakdown.reduce((a, it) => a + (!it.is_total ? (it.ftds ?? it.users ?? 0) : 0), 0) : 0) ||
+      (r.ops ? ((r.ops.andrea?.users || 0) + (r.ops.jessie?.users || 0)) : 0)
+    );
 
     const _initToday = getTodayIso();
-    let currentStartDate = _initToday.substring(0, 8) + '01';
-    let currentEndDate = _initToday;
-    let activeCalTarget = 'from';
-    let calViewYear = new Date().getFullYear();
-    let calViewMonth = new Date().getMonth();
-
+    let currentStartDate = _initToday.slice(0, 8) + '01', currentEndDate = _initToday, activeCalTarget = 'from';
+    let calViewYear = new Date().getFullYear(), calViewMonth = new Date().getMonth();
     const formatS2P = (s, u) => u > 0 ? (s === 0 ? '0:1' : `1:${Math.round(s / u)}`) : (s > 0 ? `0:${s}` : '0:0');
-    const isoToDisplay = s => s ? `${s.split('-')[1]}/${s.split('-')[2]}/${s.split('-')[0]}` : '';
+    const isoToDisplay = s => s ? `${s.slice(5, 7)}/${s.slice(8, 10)}/${s.slice(0, 4)}` : '';
+    const parseNum = v => parseFloat(String(v || 0).replace(/["', ]/g, '')) || 0;
 
     async function fetchMonthFile(mKey, year = getCurrentYear()) {
-      const capKey = mKey.charAt(0).toUpperCase() + mKey.slice(1);
-      const ts = Date.now();
-
-      const candidatePaths = [
-        `${year}/data_${mKey}.json?t=${ts}`,
-        `./${year}/data_${mKey}.json?t=${ts}`,
-        `${year}/data_${capKey}.json?t=${ts}`,
-        `./${year}/data_${capKey}.json?t=${ts}`,
-        `${year}/data/data_${mKey}.json?t=${ts}`,
-        `./${year}/data/data_${mKey}.json?t=${ts}`,
-        `data_${mKey}.json?t=${ts}`,
-        `./data_${mKey}.json?t=${ts}`,
-        `data/data_${mKey}.json?t=${ts}`,
-        `data_${capKey}.json?t=${ts}`,
-        `./data_${capKey}.json?t=${ts}`
-      ];
-
-      const order = candidatePaths.map((_, idx) => idx);
-      if (preferredJsonPathIdx >= 0 && preferredJsonPathIdx < order.length) {
-        order.splice(order.indexOf(preferredJsonPathIdx), 1);
-        order.unshift(preferredJsonPathIdx);
-      }
-
-      for (const idx of order) {
+      const cap = mKey[0].toUpperCase() + mKey.slice(1), ts = Date.now();
+      const paths = [
+        `${year}/data_${mKey}`, `./${year}/data_${mKey}`, `${year}/data_${cap}`, `./${year}/data_${cap}`,
+        `${year}/data/data_${mKey}`, `./${year}/data/data_${mKey}`, `data_${mKey}`, `./data_${mKey}`,
+        `data/data_${mKey}`, `data_${cap}`, `./data_${cap}`
+      ].map(p => `${p}.json?t=${ts}`);
+      const ord = paths.map((_, i) => i);
+      if (preferredJsonPathIdx >= 0 && preferredJsonPathIdx < ord.length) { ord.splice(ord.indexOf(preferredJsonPathIdx), 1); ord.unshift(preferredJsonPathIdx); }
+      for (const i of ord) {
         try {
-          const r = await fetch(candidatePaths[idx], { cache: 'no-store' });
-          if (r.ok) {
-            const d = await r.json();
-            if (d && (d.daily_records || d.summary_mtd)) {
-              preferredJsonPathIdx = idx;
-              return d;
-            }
-          }
-        } catch (e) { }
+          const r = await fetch(paths[i], { cache: 'no-store' });
+          if (r.ok) { const d = await r.json(); if (d && (d.daily_records || d.summary_mtd)) { preferredJsonPathIdx = i; return d; } }
+        } catch (e) {}
       }
       return null;
     }
 
     async function loadAllMonths() {
-      const currentYear = getCurrentYear();
-      const currentMonthIdx = new Date().getMonth();
-      const years = [];
-      for (let y = START_YEAR; y <= Math.max(START_YEAR, currentYear); y++) {
-        years.push(y);
+      const curY = getCurrentYear(), curM = new Date().getMonth(), jobs = [];
+      for (let y = START_YEAR; y <= Math.max(START_YEAR, curY); y++) {
+        MONTH_KEYS.forEach((m, i) => { if (!(y === 2026 && i < 6) && !(y === curY && i > curM)) jobs.push(fetchMonthFile(m, y)); });
       }
-
-      const promises = [];
-      for (const y of years) {
-        MONTH_KEYS.forEach((mKey, mIdx) => {
-          if (y === 2026 && mIdx < 6) return;
-          if (y === currentYear && mIdx > currentMonthIdx) return;
-          promises.push(fetchMonthFile(mKey, y));
-        });
-      }
-
-      const results = await Promise.all(promises);
-      const valid = results.filter(Boolean);
-
-      const seenKeys = new Set();
-      const uniqueMonths = [];
-      valid.forEach(m => {
-        const key = (m.daily_records || []).map(r => normDate(r.date)).join('|') || m.month || JSON.stringify(m.kpis || {});
-        if (!seenKeys.has(key)) {
-          seenKeys.add(key);
-          uniqueMonths.push(m);
-        }
+      const seen = new Set();
+      return (await Promise.all(jobs)).filter(Boolean).filter(m => {
+        const k = (m.daily_records || []).map(r => normDate(r.date)).join('|') || m.month || JSON.stringify(m.kpis || {});
+        return seen.has(k) ? false : (seen.add(k), true);
       });
-
-      return uniqueMonths;
     }
 
     function initDateControls() {
-      const todayIso = getTodayIso();
-      currentStartDate = todayIso.substring(0, 8) + '01';
+      const t = getTodayIso();
+      currentStartDate = t.slice(0, 8) + '01';
       if (currentStartDate < MIN_ALLOWED_DATE) currentStartDate = MIN_ALLOWED_DATE;
-      currentEndDate = todayIso;
-
-      calViewYear = parseInt(currentEndDate.substring(0, 4), 10);
-      calViewMonth = parseInt(currentEndDate.substring(5, 7), 10) - 1;
-
-      setT('fromDisplay', isoToDisplay(currentStartDate));
-      setT('toDisplay', isoToDisplay(currentEndDate));
+      currentEndDate = t;
+      calViewYear = +currentEndDate.slice(0, 4); calViewMonth = +currentEndDate.slice(5, 7) - 1;
+      setT('fromDisplay', isoToDisplay(currentStartDate)); setT('toDisplay', isoToDisplay(currentEndDate));
       setT('calHeaderTitle', `${MONTH_NAMES[calViewMonth]} ${calViewYear}`);
     }
 
-    function resetPillStyles(activeTarget = null) {
+    function resetPillStyles(active = null) {
       const base = "flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs transition-all hover:border-slate-400 cursor-pointer focus:outline-none";
-      const active = "flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs transition-all hover:bg-slate-50 cursor-pointer focus:outline-none";
-      $('fromPillBtn').className = activeTarget === 'from' ? active : base;
-      $('toPillBtn').className = activeTarget === 'to' ? active : base;
+      const act = "flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs transition-all hover:bg-slate-50 cursor-pointer focus:outline-none";
+      $('fromPillBtn').className = active === 'from' ? act : base;
+      $('toPillBtn').className = active === 'to' ? act : base;
     }
 
     function toggleCustomCalendar(target) {
       const pop = $('customCalendarPopup');
-      if (!pop.classList.contains('hidden') && activeCalTarget === target) {
-        pop.classList.add('hidden');
-        resetPillStyles();
-        return;
-      }
-      activeCalTarget = target;
-      resetPillStyles(target);
-      pop.classList.remove('hidden');
+      if (!pop.classList.contains('hidden') && activeCalTarget === target) { pop.classList.add('hidden'); resetPillStyles(); return; }
+      activeCalTarget = target; resetPillStyles(target); pop.classList.remove('hidden');
       pop.style.left = target === 'from' ? '0px' : '130px';
       const d = target === 'from' ? currentStartDate : currentEndDate;
-      calViewYear = parseInt(d.substring(0, 4), 10);
-      calViewMonth = parseInt(d.substring(5, 7), 10) - 1;
+      calViewYear = +d.slice(0, 4); calViewMonth = +d.slice(5, 7) - 1;
       renderCustomCalendar();
     }
 
     function navigateMonth(dir) {
-      let nextMonth = calViewMonth + dir;
-      let nextYear = calViewYear;
-      if (nextMonth < 0) { nextMonth = 11; nextYear--; }
-      else if (nextMonth > 11) { nextMonth = 0; nextYear++; }
-
-      const todayIso = getTodayIso();
-      const maxYear = parseInt(todayIso.substring(0, 4), 10);
-      const maxMonth = parseInt(todayIso.substring(5, 7), 10) - 1;
-
-      if (nextYear < 2026 || (nextYear === 2026 && nextMonth < 6)) return;
-      if (nextYear > maxYear || (nextYear === maxYear && nextMonth > maxMonth)) return;
-
-      calViewMonth = nextMonth;
-      calViewYear = nextYear;
-      renderCustomCalendar();
+      let m = calViewMonth + dir, y = calViewYear;
+      if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+      const t = getTodayIso(), maxY = +t.slice(0, 4), maxM = +t.slice(5, 7) - 1;
+      if (y < 2026 || (y === 2026 && m < 6) || y > maxY || (y === maxY && m > maxM)) return;
+      calViewMonth = m; calViewYear = y; renderCustomCalendar();
     }
 
     function renderCustomCalendar() {
       setT('calHeaderTitle', `${MONTH_NAMES[calViewMonth]} ${calViewYear}`);
-      const grid = $('calDaysGrid');
-      grid.innerHTML = '';
-
-      const todayIso = getTodayIso();
-      const first = new Date(calViewYear, calViewMonth, 1), days = new Date(calViewYear, calViewMonth + 1, 0).getDate();
-      const offset = (first.getDay() + 6) % 7;
-
-      for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
-
+      const grid = $('calDaysGrid'); grid.innerHTML = '';
+      const t = getTodayIso(), first = new Date(calViewYear, calViewMonth, 1), days = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+      for (let i = 0; i < (first.getDay() + 6) % 7; i++) grid.appendChild(document.createElement('div'));
       for (let day = 1; day <= days; day++) {
         const iso = `${calViewYear}-${String(calViewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = day;
-
-        if (iso < MIN_ALLOWED_DATE || iso > todayIso) {
-          btn.className = 'p-1.5 text-slate-300 font-bold rounded-xl cursor-not-allowed';
-        } else {
+        if (iso < MIN_ALLOWED_DATE || iso > t) btn.className = 'p-1.5 text-slate-300 font-bold rounded-xl cursor-not-allowed';
+        else {
           const sel = (activeCalTarget === 'from' && iso === currentStartDate) || (activeCalTarget === 'to' && iso === currentEndDate);
           btn.className = `p-1.5 font-bold rounded-xl ${sel ? 'bg-[#0ea57a] text-white shadow-xs' : 'text-slate-800 hover:bg-slate-100 cursor-pointer'}`;
           btn.onclick = () => selectCalendarDate(iso);
@@ -819,195 +357,123 @@
     }
 
     async function selectCalendarDate(iso) {
-      if (activeCalTarget === 'from') {
-        currentStartDate = iso; if (currentStartDate > currentEndDate) currentEndDate = currentStartDate;
-        toggleCustomCalendar('to');
-      } else {
-        currentEndDate = iso; if (currentEndDate < currentStartDate) currentStartDate = currentEndDate;
-        $('customCalendarPopup').classList.add('hidden'); resetPillStyles();
-      }
-      setT('fromDisplay', isoToDisplay(currentStartDate));
-      setT('toDisplay', isoToDisplay(currentEndDate));
+      if (activeCalTarget === 'from') { currentStartDate = iso; if (currentStartDate > currentEndDate) currentEndDate = currentStartDate; toggleCustomCalendar('to'); }
+      else { currentEndDate = iso; if (currentEndDate < currentStartDate) currentStartDate = currentEndDate; $('customCalendarPopup').classList.add('hidden'); resetPillStyles(); }
+      setT('fromDisplay', isoToDisplay(currentStartDate)); setT('toDisplay', isoToDisplay(currentEndDate));
       await updateDashboardForDateRange();
     }
 
     document.addEventListener('click', e => {
       const p = $('customCalendarPopup');
-      if (p && !p.contains(e.target) && !$('fromPillBtn').contains(e.target) && !$('toPillBtn').contains(e.target)) {
-        p.classList.add('hidden'); resetPillStyles();
-      }
+      if (p && !p.contains(e.target) && !$('fromPillBtn').contains(e.target) && !$('toPillBtn').contains(e.target)) { p.classList.add('hidden'); resetPillStyles(); }
     });
 
-    const parseNum = v => parseFloat(String(v || 0).replace(/["', ]/g, '')) || 0;
-
     function parseCsvLine(line) {
-      const res = [];
-      let cur = '', inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          inQuotes = !inQuotes;
-        } else if (ch === ',' && !inQuotes) {
-          res.push(cur.trim());
-          cur = '';
-        } else {
-          cur += ch;
-        }
-      }
-      res.push(cur.trim());
-      return res.map(s => s.replace(/^"|"$/g, '').trim());
+      const res = []; let cur = '', q = false;
+      for (const ch of line) { if (ch === '"') q = !q; else if (ch === ',' && !q) { res.push(cur.trim()); cur = ''; } else cur += ch; }
+      return [...res, cur.trim()].map(s => s.replace(/^"|"$/g, '').trim());
     }
 
     function parseDailyCsv(txt) {
       if (!txt || typeof txt !== 'string') return null;
-      const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      const map = {};
-      let curEsp = '', curIp = '';
-
-      for (const line of lines) {
-        const lower = line.toLowerCase();
-        if (lower.startsWith('date,') || lower.startsWith('esp,') || lower.startsWith('"date",') || lower.includes('grand total')) continue;
-
-        const c = parseCsvLine(line);
-        if (!c.length) continue;
-
+      const map = {}; let curEsp = '', curIp = '';
+      for (const line of txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean)) {
+        const lw = line.toLowerCase();
+        if (lw.startsWith('date,') || lw.startsWith('esp,') || lw.startsWith('"date",') || lw.includes('grand total')) continue;
+        const c = parseCsvLine(line); if (!c.length) continue;
         if (c[0]?.toUpperCase().startsWith('IP')) { curIp = c[0]; continue; }
         if (c[0]) { curEsp = c[0]; curIp = ''; continue; }
-
-        const domName = c[1];
-        if (!c[0] && domName && domName.toUpperCase() !== 'DOMAIN' && domName.toUpperCase() !== 'TOTAL') {
+        const dom = c[1];
+        if (!c[0] && dom && !/^(DOMAIN|TOTAL)$/i.test(dom)) {
           const full = curIp ? `${curEsp} ${curIp}`.trim() : curEsp.trim();
           if (!full || isExcludedEsp(full)) continue;
-
           if (!map[full]) map[full] = { esp: full, delivered: 0, softBounce: 0, hardBounce: 0, bounced: 0, opened: 0, clicked: 0, unsub: 0, signups: 0, players: 0, domains: {} };
-
-          const d = parseNum(c[2]);
-          const sb = parseNum(c[3]);
-          const hb = parseNum(c[4]);
-          const o = parseNum(c[5]);
-          const cl = parseNum(c[7]);
-          const un = parseNum(c[11]);
-
-          const item = map[full];
-          item.delivered += d; item.softBounce += sb; item.hardBounce += hb; item.bounced += (sb + hb); item.opened += o; item.clicked += cl; item.unsub += un;
-
-          if (!item.domains[domName]) item.domains[domName] = { delivered: 0, softBounce: 0, hardBounce: 0, bounced: 0, opened: 0, clicked: 0, unsub: 0, signups: 0, players: 0 };
-          const dom = item.domains[domName];
-          dom.delivered += d; dom.softBounce += sb; dom.hardBounce += hb; dom.bounced += (sb + hb); dom.opened += o; dom.clicked += cl; dom.unsub += un;
+          const d = parseNum(c[2]), sb = parseNum(c[3]), hb = parseNum(c[4]), o = parseNum(c[5]), cl = parseNum(c[7]), un = parseNum(c[11]);
+          const it = map[full], dv = it.domains[dom] || (it.domains[dom] = { delivered: 0, softBounce: 0, hardBounce: 0, bounced: 0, opened: 0, clicked: 0, unsub: 0, signups: 0, players: 0 });
+          [it, dv].forEach(t => { t.delivered += d; t.softBounce += sb; t.hardBounce += hb; t.bounced += sb + hb; t.opened += o; t.clicked += cl; t.unsub += un; });
         }
       }
-      return Object.keys(map).length > 0 ? map : null;
+      return Object.keys(map).length ? map : null;
     }
 
     async function fetchCsvDay(m, d, y = getCurrentYear()) {
-      const k = `${y}/${m}/${d}`;
-      if (csvCache[k]) return csvCache[k];
-
-      const capM = m.charAt(0).toUpperCase() + m.slice(1);
-      const dNum = String(parseInt(d, 10));
-      const ts = Date.now();
-
-      const candidatePaths = [
-        `${y}/maildata/maildata_${m}/${d}.csv`,
-        `./${y}/maildata/maildata_${m}/${d}.csv`,
-        `${y}/maildata/maildata_${m}/${dNum}.csv`,
-        `./${y}/maildata/maildata_${m}/${dNum}.csv`,
-        `${y}/maildata/maildata_${capM}/${d}.csv`,
-        `./${y}/maildata/maildata_${capM}/${d}.csv`,
-        `${y}/maildata/maildata_${capM}/${dNum}.csv`,
-        `./${y}/maildata/maildata_${capM}/${dNum}.csv`,
-        `${y}/maildata/${m}/${d}.csv`,
-        `./${y}/maildata/${m}/${d}.csv`,
-        `${y}/maildata/${m}/${dNum}.csv`,
-        `./${y}/maildata/${m}/${dNum}.csv`,
-        `${y}/maildata/${capM}/${d}.csv`,
-        `./${y}/maildata/${capM}/${d}.csv`,
-        `${y}/maildata/${capM}/${dNum}.csv`,
-        `./${y}/maildata/${capM}/${dNum}.csv`,
-        `${y}/maildata_${m}/${d}.csv`,
-        `./${y}/maildata_${m}/${d}.csv`,
-        `${y}/maildata_${m}/${dNum}.csv`,
-        `./${y}/maildata_${m}/${dNum}.csv`,
-        `${y}/maildata_${capM}/${d}.csv`,
-        `./${y}/maildata_${capM}/${d}.csv`,
-        `maildata/maildata_${m}/${d}.csv`,
-        `./maildata/maildata_${m}/${d}.csv`,
-        `maildata_${m}/${d}.csv`,
-        `./maildata_${m}/${d}.csv`,
-        `maildata_${m}/${dNum}.csv`,
-        `./maildata_${m}/${dNum}.csv`,
-        `maildata_${capM}/${d}.csv`,
-        `./maildata_${capM}/${d}.csv`,
-        `maildata_${capM}/${dNum}.csv`,
-        `./maildata_${capM}/${dNum}.csv`,
-        `data/maildata_${m}/${d}.csv`,
-        `data/maildata_${capM}/${d}.csv`
+      const k = `${y}/${m}/${d}`; if (csvCache[k]) return csvCache[k];
+      const cap = m[0].toUpperCase() + m.slice(1), dn = String(+d), ts = Date.now();
+      const paths = [
+        ...[`${y}/maildata/maildata_`, `${y}/maildata/`].flatMap(p => [m, cap].flatMap(mn => [d, dn].flatMap(x => [`${p}${mn}/${x}.csv`, `./${p}${mn}/${x}.csv`]))),
+        ...[d, dn].flatMap(x => [`${y}/maildata_${m}/${x}.csv`, `./${y}/maildata_${m}/${x}.csv`]),
+        `${y}/maildata_${cap}/${d}.csv`, `./${y}/maildata_${cap}/${d}.csv`,
+        `maildata/maildata_${m}/${d}.csv`, `./maildata/maildata_${m}/${d}.csv`,
+        ...[m, cap].flatMap(mn => [d, dn].flatMap(x => [`maildata_${mn}/${x}.csv`, `./maildata_${mn}/${x}.csv`])),
+        `data/maildata_${m}/${d}.csv`, `data/maildata_${cap}/${d}.csv`
       ];
-
-      const order = candidatePaths.map((_, idx) => idx);
-      if (preferredCsvPathIdx >= 0 && preferredCsvPathIdx < order.length) {
-        order.splice(order.indexOf(preferredCsvPathIdx), 1);
-        order.unshift(preferredCsvPathIdx);
-      }
-
-      for (const idx of order) {
+      const ord = paths.map((_, i) => i);
+      if (preferredCsvPathIdx >= 0 && preferredCsvPathIdx < ord.length) { ord.splice(ord.indexOf(preferredCsvPathIdx), 1); ord.unshift(preferredCsvPathIdx); }
+      for (const i of ord) {
         try {
-          const r = await fetch(`${candidatePaths[idx]}?t=${ts}`, { cache: 'no-store' });
+          const r = await fetch(`${paths[i]}?t=${ts}`, { cache: 'no-store' });
           if (r.ok) {
             const txt = await r.text();
             if (txt && !txt.trim().startsWith('<') && txt.includes(',')) {
-              const parsed = parseDailyCsv(txt);
-              if (parsed) {
-                preferredCsvPathIdx = idx;
-                csvCache[k] = parsed;
-                return parsed;
-              }
+              const p = parseDailyCsv(txt); if (p) { preferredCsvPathIdx = i; return (csvCache[k] = p); }
             }
           }
-        } catch (e) { }
+        } catch (e) {}
       }
       return null;
     }
 
     async function aggregateCsvForRange(s, e) {
-      const [sy, sm, sd] = s.split('-').map(Number);
-      const [ey, em, ed] = e.split('-').map(Number);
-
-      const cur = new Date(sy, sm - 1, sd, 12, 0, 0);
-      const end = new Date(ey, em - 1, ed, 12, 0, 0);
-      const dates = [];
-
-      while (cur <= end) {
-        dates.push({
-          y: cur.getFullYear(),
-          m: MONTH_KEYS[cur.getMonth()],
-          d: String(cur.getDate()).padStart(2, '0')
-        });
-        cur.setDate(cur.getDate() + 1);
-      }
-
-      const days = await Promise.all(dates.map(x => fetchCsvDay(x.m, x.d, x.y)));
-      const validDays = days.filter(Boolean);
-      const loadedCount = validDays.length;
-      const expectedCount = dates.length;
-
+      const [sy, sm, sd] = s.split('-').map(Number), [ey, em, ed] = e.split('-').map(Number);
+      const cur = new Date(sy, sm - 1, sd, 12), end = new Date(ey, em - 1, ed, 12), dates = [];
+      while (cur <= end) { dates.push({ y: cur.getFullYear(), m: MONTH_KEYS[cur.getMonth()], d: String(cur.getDate()).padStart(2, '0') }); cur.setDate(cur.getDate() + 1); }
+      const days = (await Promise.all(dates.map(x => fetchCsvDay(x.m, x.d, x.y)))).filter(Boolean);
       const sub = $('dateRangeSubtitle');
-      if (sub) {
-        sub.innerHTML = `Period: ${s} to ${e} &bull; <strong class="${loadedCount === expectedCount ? 'text-emerald-700' : 'text-amber-700'}">CSVs: ${loadedCount} of ${expectedCount} days</strong>`;
-      }
-
-      const merged = {};
-      validDays.forEach(m => Object.entries(m).forEach(([esp, v]) => {
+      if (sub) sub.innerHTML = `Period: ${s} to ${e} &bull; <strong class="${days.length === dates.length ? 'text-emerald-700' : 'text-amber-700'}">CSVs: ${days.length} of ${dates.length} days</strong>`;
+      const merged = {}, keys = ['delivered','softBounce','hardBounce','bounced','opened','clicked','unsub'];
+      days.forEach(m => Object.entries(m).forEach(([esp, v]) => {
         if (!merged[esp]) merged[esp] = { ...v, domains: {} };
-        else {
-          ['delivered', 'softBounce', 'hardBounce', 'bounced', 'opened', 'clicked', 'unsub'].forEach(k => merged[esp][k] += v[k]);
-        }
+        else keys.forEach(k => merged[esp][k] += v[k]);
         Object.entries(v.domains).forEach(([dom, dv]) => {
           if (!merged[esp].domains[dom]) merged[esp].domains[dom] = { ...dv };
-          else['delivered', 'softBounce', 'hardBounce', 'bounced', 'opened', 'clicked', 'unsub'].forEach(k => merged[esp].domains[dom][k] += dv[k]);
+          else keys.forEach(k => merged[esp].domains[dom][k] += dv[k]);
         });
       }));
       return merged;
+    }
+
+    function distributeExactIntegerTotal(items, target, getW, set) {
+      if (!items?.length) return;
+      if (items.length === 1) { set(items[0], Math.max(0, target || 0)); return; }
+      if (!target || target <= 0) { items.forEach(it => set(it, 0)); return; }
+      const w = items.map(it => Math.max(0, getW(it) || 0)), sW = w.reduce((a, b) => a + b, 0);
+      const ew = sW > 0 ? w : items.map(() => 1), totW = ew.reduce((a, b) => a + b, 0);
+      const q = ew.map(v => (v / totW) * target), ints = q.map(Math.floor);
+      let rem = target - ints.reduce((a, b) => a + b, 0);
+      q.map((v, i) => ({ i, r: v - ints[i] })).sort((a, b) => b.r - a.r).slice(0, rem).forEach(x => ints[x.i]++);
+      items.forEach((it, i) => set(it, ints[i]));
+    }
+
+    function distributeByWeight(items, delta, pickers, apply) {
+      if (!items.length || delta <= 0) return;
+      let pool = items, wFn = () => 1;
+      for (const fn of pickers) { const p = items.filter(it => (fn(it) || 0) > 0); if (p.length) { pool = p; wFn = fn; break; } }
+      const ext = new Array(pool.length).fill(0);
+      distributeExactIntegerTotal(pool.map((it, i) => ({ it, i })), delta, x => wFn(x.it), (x, v) => ext[x.i] = v);
+      pool.forEach((it, i) => apply(it, ext[i]));
+    }
+
+    function syncBreakdownMissing(allItems, advs, itemF, advF, pickers, initialMissing) {
+      let missing = initialMissing;
+      if (missing <= 0 || !allItems.length) return;
+      Object.entries(advs).forEach(([advName, advData]) => {
+        if (missing <= 0 || !(advData[advF] > 0)) return;
+        const advItems = allItems.filter(it => (it.advertiser || '').trim().toLowerCase() === advName.trim().toLowerCase());
+        if (!advItems.length) return;
+        const need = Math.min(missing, Math.max(0, (advData[advF] || 0) - advItems.reduce((a, it) => a + (it[itemF] || 0), 0)));
+        if (need > 0) { distributeByWeight(advItems, need, pickers, (it, v) => it[itemF] += v); missing -= need; }
+      });
+      if (missing > 0) distributeByWeight(allItems, missing, pickers, (it, v) => it[itemF] += v);
     }
 
     function aggregateJsonData(s, e) {
@@ -1017,780 +483,270 @@
         advertisers: {}, brands: {}, esp_ip_breakdown: [],
         ops: { jessie: { signups: 0, users: 0 }, andrea: { signups: 0, users: 0 }, signups_by_advertiser: {}, users_by_advertiser: {} }
       };
-
-      const months = globalLoadedMonths.filter(m =>
-        (m.daily_records || []).some(r => {
-          const d = normDate(r.date);
-          return d >= s && d <= e;
-        })
-      );
-
+      const months = globalLoadedMonths.filter(m => (m.daily_records || []).some(r => { const d = normDate(r.date); return d >= s && d <= e; }));
       let monthRealUsers = 0, monthRealRevenue = 0, monthRealSignups = 0, mtdBreakdownUsers = 0;
 
       months.forEach(m => {
-        if (m.kpis) { ['budget', 'signups', 'users', 'revenue', 'profit'].forEach(k => agg.kpi[k] += (m.kpis[k] || 0)); }
-        agg.totalMonthDays += (m.total_days_in_month || 0);
-
+        if (m.kpis) ['budget','signups','users','revenue','profit'].forEach(k => agg.kpi[k] += m.kpis[k] || 0);
+        agg.totalMonthDays += m.total_days_in_month || 0;
         (m.daily_records || []).forEach(r => {
           const d = normDate(r.date);
-          if (d && d <= e) {
-            monthRealUsers += extractDayUsers(r);
-            monthRealRevenue += (r.revenue || 0);
-            monthRealSignups += (r.signups || 0);
-          }
+          if (d && d <= e) { monthRealUsers += extractDayUsers(r); monthRealRevenue += r.revenue || 0; monthRealSignups += r.signups || 0; }
         });
-
-        const mtdRowsCheck = m.esp_ip_breakdown?.by_row || m.esp_mtd_totals || [];
-        mtdRowsCheck.forEach(item => {
-          if (!item.is_total && !item.is_overall && !isExcludedEsp(item.esp_ip)) {
-            mtdBreakdownUsers += (item.ftds || 0);
-          }
+        (m.esp_ip_breakdown?.by_row || m.esp_mtd_totals || []).forEach(it => {
+          if (!it.is_total && !it.is_overall && !isExcludedEsp(it.esp_ip)) mtdBreakdownUsers += it.ftds || 0;
         });
       });
+      if (monthRealUsers === 0 && mtdBreakdownUsers > 0) monthRealUsers = mtdBreakdownUsers;
 
-      if (monthRealUsers === 0 && mtdBreakdownUsers > 0) {
-        monthRealUsers = mtdBreakdownUsers;
-      }
-
-      const espIpMap = {};
-      const brandCanonicalMap = {};
-
-      function addBreakdownItem(espIpRaw, advRaw, brRaw, sig, ftd) {
-        const espIp = (espIpRaw || 'Other').trim();
-        const adv = (advRaw || '-').trim();
-        const br = (brRaw || '-').trim();
-        if (!espIp || espIp.toUpperCase().includes('TOTAL') || isExcludedEsp(espIp)) return;
-
-        const key = `${adv}___${br}`;
-        if (!espIpMap[espIp]) {
-          espIpMap[espIp] = { items: {}, order: [] };
-        }
-        if (!espIpMap[espIp].items[key]) {
-          espIpMap[espIp].items[key] = { esp_ip: espIp, advertiser: adv, brand: br, signups: 0, ftds: 0 };
-          espIpMap[espIp].order.push(key);
-        }
-        espIpMap[espIp].items[key].signups += (sig || 0);
-        espIpMap[espIp].items[key].ftds += (ftd || 0);
-      }
+      const espIpMap = {}, brandMap = {};
+      const addBd = (espRaw, advRaw, brRaw, sig, ftd) => {
+        const esp = (espRaw || 'Other').trim(), adv = (advRaw || '-').trim(), br = (brRaw || '-').trim();
+        if (!esp || esp.toUpperCase().includes('TOTAL') || isExcludedEsp(esp)) return;
+        const k = `${adv}___${br}`;
+        if (!espIpMap[esp]) espIpMap[esp] = { items: {}, order: [] };
+        if (!espIpMap[esp].items[k]) { espIpMap[esp].items[k] = { esp_ip: esp, advertiser: adv, brand: br, signups: 0, ftds: 0 }; espIpMap[esp].order.push(k); }
+        espIpMap[esp].items[k].signups += sig || 0; espIpMap[esp].items[k].ftds += ftd || 0;
+      };
 
       months.forEach(m => {
-        const dailyInRange = (m.daily_records || []).filter(r => {
-          const d = normDate(r.date);
-          return d >= s && d <= e;
-        });
-
-        // 1. CARGA BASE MTD SIEMPRE ACTIVA (Preserva cardcrush_direct, LuckyBunny direct, etc.)
         const mtdRows = m.esp_ip_breakdown?.by_row || m.esp_mtd_totals || [];
-        mtdRows.forEach(item => {
-          if (item.is_total || item.is_overall) return;
-          addBreakdownItem(item.esp_ip, item.advertiser, item.brand, item.signups, item.ftds);
-        });
-
-        // 2. Acumulación de métricas diarias con fallback real
-        dailyInRange.forEach(r => {
-          const dayUsers = extractDayUsers(r);
-
-          agg.daysElapsedInRange++;
-          agg.budget += r.budget || 0;
-          agg.signups += r.signups || 0;
-          agg.users += dayUsers;
-          agg.revenue += r.revenue || 0;
-
+        mtdRows.forEach(it => { if (!it.is_total && !it.is_overall) addBd(it.esp_ip, it.advertiser, it.brand, it.signups, it.ftds); });
+        (m.daily_records || []).filter(r => { const d = normDate(r.date); return d >= s && d <= e; }).forEach(r => {
+          agg.daysElapsedInRange++; agg.budget += r.budget || 0; agg.signups += r.signups || 0; agg.users += extractDayUsers(r); agg.revenue += r.revenue || 0;
           Object.entries(r.advertisers || {}).forEach(([adv, v]) => {
-            const cleanAdv = (adv || '-').trim();
-            if (!agg.advertisers[cleanAdv]) agg.advertisers[cleanAdv] = { signups: 0, users: 0, revenue: 0 };
-            agg.advertisers[cleanAdv].signups += v.signups || 0;
-            agg.advertisers[cleanAdv].users += (v.users ?? v.ftds ?? v.players ?? 0);
-            agg.advertisers[cleanAdv].revenue += v.revenue || 0;
+            const c = (adv || '-').trim();
+            if (!agg.advertisers[c]) agg.advertisers[c] = { signups: 0, users: 0, revenue: 0 };
+            agg.advertisers[c].signups += v.signups || 0; agg.advertisers[c].users += (v.users ?? v.ftds ?? v.players ?? 0); agg.advertisers[c].revenue += v.revenue || 0;
           });
-
           Object.entries(r.brands || {}).forEach(([br, v]) => {
-            const cleanBr = (br || '-').trim();
-            const lowBr = cleanBr.toLowerCase();
-            if (!brandCanonicalMap[lowBr]) brandCanonicalMap[lowBr] = cleanBr;
-            const canonicalBr = brandCanonicalMap[lowBr];
-
-            if (!agg.brands[canonicalBr]) {
-              agg.brands[canonicalBr] = { advertiser: v.advertiser || '-', signups: 0, users: 0, revenue: 0 };
-            } else if (agg.brands[canonicalBr].advertiser === '-' && v.advertiser) {
-              agg.brands[canonicalBr].advertiser = v.advertiser;
-            }
-            agg.brands[canonicalBr].signups += v.signups || 0;
-            agg.brands[canonicalBr].users += (v.users ?? v.ftds ?? v.players ?? 0);
-            agg.brands[canonicalBr].revenue += v.revenue || 0;
+            const c = (br || '-').trim(), lw = c.toLowerCase(), cb = brandMap[lw] || (brandMap[lw] = c);
+            if (!agg.brands[cb]) agg.brands[cb] = { advertiser: v.advertiser || '-', signups: 0, users: 0, revenue: 0 };
+            else if (agg.brands[cb].advertiser === '-' && v.advertiser) agg.brands[cb].advertiser = v.advertiser;
+            agg.brands[cb].signups += v.signups || 0; agg.brands[cb].users += (v.users ?? v.ftds ?? v.players ?? 0); agg.brands[cb].revenue += v.revenue || 0;
           });
-
-          if (r.ops) {
-            ['andrea', 'jessie'].forEach(p => {
-              if (r.ops[p]) {
-                agg.ops[p].signups += r.ops[p].signups || 0;
-                agg.ops[p].users += r.ops[p].users || 0;
-              }
-            });
-          }
-
-          if (Array.isArray(r.esp_ip_breakdown) && mtdRows.length === 0) {
-            r.esp_ip_breakdown.forEach(item => {
-              addBreakdownItem(item.esp_ip, item.advertiser, item.brand, item.signups, item.ftds);
-            });
-          }
+          if (r.ops) ['andrea','jessie'].forEach(p => { if (r.ops[p]) { agg.ops[p].signups += r.ops[p].signups || 0; agg.ops[p].users += r.ops[p].users || 0; } });
+          if (Array.isArray(r.esp_ip_breakdown) && !mtdRows.length) r.esp_ip_breakdown.forEach(it => addBd(it.esp_ip, it.advertiser, it.brand, it.signups, it.ftds));
         });
       });
 
-      // 3. Participación proporcional (%) de los FTDs reales del mes cuando el sub-rango tiene actividad (Revenue / Signups)
-      //    y los FTDs diarios aún no se ven reflejados en esas fechas (sin modificar nunca el mes completo ni mover el calendario).
       if (monthRealUsers > 0 && (agg.revenue > 0 || agg.signups > 0)) {
-        const revShare = monthRealRevenue > 0 ? (agg.revenue / monthRealRevenue) : 0;
-        const sigShare = monthRealSignups > 0 ? (agg.signups / monthRealSignups) : 0;
-        let activityShare = (revShare > 0 && sigShare > 0) ? (revShare * 0.65 + sigShare * 0.35) : (revShare || sigShare);
-        activityShare = Math.min(1, Math.max(0, activityShare));
-
-        if (activityShare > 0) {
-          const proportionalUsers = Math.min(monthRealUsers, Math.max(1, Math.round(monthRealUsers * activityShare)));
-          if (agg.users < proportionalUsers) {
-            agg.users = proportionalUsers;
-          }
-        }
+        const rSh = monthRealRevenue > 0 ? agg.revenue / monthRealRevenue : 0, sSh = monthRealSignups > 0 ? agg.signups / monthRealSignups : 0;
+        const sh = Math.min(1, Math.max(0, (rSh > 0 && sSh > 0) ? (rSh * 0.65 + sSh * 0.35) : (rSh || sSh)));
+        if (sh > 0) agg.users = Math.max(agg.users, Math.min(monthRealUsers, Math.max(1, Math.round(monthRealUsers * sh))));
       }
 
-      // Sincronizar agg.brands y agg.advertisers si agg.users es mayor a la suma parcial registrada en esos objetos
+      const advVals = Object.values(agg.advertisers), advSigSum = advVals.reduce((a, v) => a + (v.signups || 0), 0);
+      distributeByWeight(advVals, agg.signups - advSigSum, [v => v.signups, v => v.revenue], (v, val) => v.signups += val);
+
       const brandVals = Object.values(agg.brands);
-      const brandSum = brandVals.reduce((a, b) => a + (b.users || 0), 0);
-      if (agg.users > brandSum && brandVals.length > 0) {
-        const activeBrands = brandVals.filter(b => (b.revenue || 0) > 0 || (b.signups || 0) > 0);
-        const pool = activeBrands.length > 0 ? activeBrands : brandVals;
-        const extras = new Array(pool.length).fill(0);
-        distributeExactIntegerTotal(
-          pool.map((b, idx) => ({ b, idx })),
-          agg.users - brandSum,
-          x => ((x.b.revenue || 0) > 0 ? x.b.revenue : ((x.b.signups || 0) || 1)),
-          (x, val) => { extras[x.idx] = val; }
-        );
-        pool.forEach((b, idx) => { b.users += extras[idx]; });
-      }
-
-      const advVals = Object.values(agg.advertisers);
-      const advSum = advVals.reduce((a, v) => a + (v.users || 0), 0);
-      if (agg.users > advSum && advVals.length > 0) {
-        const activeAdvs = advVals.filter(v => (v.revenue || 0) > 0 || (v.signups || 0) > 0);
-        const pool = activeAdvs.length > 0 ? activeAdvs : advVals;
-        const extras = new Array(pool.length).fill(0);
-        distributeExactIntegerTotal(
-          pool.map((v, idx) => ({ v, idx })),
-          agg.users - advSum,
-          x => ((x.v.revenue || 0) > 0 ? x.v.revenue : ((x.v.signups || 0) || 1)),
-          (x, val) => { extras[x.idx] = val; }
-        );
-        pool.forEach((v, idx) => { v.users += extras[idx]; });
-      }
-
-      const rows = [];
-      let grandSig = 0, grandFtd = 0;
-
-      Object.entries(espIpMap).forEach(([espIp, group]) => {
-        let subSig = 0, subFtd = 0;
-        group.order.forEach(k => {
-          const row = group.items[k];
-          rows.push(row);
-          subSig += row.signups;
-          subFtd += row.ftds;
+      let brandSigSum = brandVals.reduce((a, b) => a + (b.signups || 0), 0);
+      if (agg.signups > brandSigSum && (brandVals.length || Object.keys(espIpMap).length)) {
+        Object.entries(agg.advertisers).forEach(([advName, advData]) => {
+          if (brandSigSum >= agg.signups) return;
+          const advK = advName.trim().toLowerCase();
+          let advB = brandVals.filter(b => (b.advertiser || '').trim().toLowerCase() === advK);
+          const need = Math.min(agg.signups - brandSigSum, Math.max(0, (advData.signups || 0) - advB.reduce((a, b) => a + (b.signups || 0), 0)));
+          if (need <= 0) return;
+          if (!advB.length) {
+            Object.values(espIpMap).forEach(g => g.order.forEach(k => {
+              const it = g.items[k];
+              if ((it.advertiser || '').trim().toLowerCase() === advK && it.brand && it.brand !== '-') {
+                const lw = it.brand.trim().toLowerCase(), cb = brandMap[lw] || (brandMap[lw] = it.brand.trim());
+                if (!agg.brands[cb]) { agg.brands[cb] = { advertiser: it.advertiser, signups: 0, users: 0, revenue: 0, _origSig: it.signups || 0 }; brandVals.push(agg.brands[cb]); }
+              }
+            }));
+            advB = brandVals.filter(b => (b.advertiser || '').trim().toLowerCase() === advK);
+          }
+          if (advB.length) { distributeByWeight(advB, need, [b => b.signups, b => b._origSig, b => b.revenue], (b, val) => b.signups += val); brandSigSum += need; }
         });
+        distributeByWeight(brandVals, agg.signups - brandSigSum, [b => b.signups, b => b.revenue], (b, val) => b.signups += val);
+      }
 
-        if (subSig > 0 || subFtd > 0) {
-          rows.push({
-            esp_ip: `GRAND TOTAL ${espIp}`,
-            advertiser: '',
-            brand: '',
-            signups: subSig,
-            ftds: subFtd,
-            is_total: true
-          });
-          grandSig += subSig;
-          grandFtd += subFtd;
-        }
+      distributeByWeight(brandVals, agg.users - brandVals.reduce((a, b) => a + (b.users || 0), 0), [b => b.revenue, b => b.signups], (b, val) => b.users += val);
+      distributeByWeight(advVals, agg.users - advVals.reduce((a, v) => a + (v.users || 0), 0), [v => v.revenue, v => v.signups], (v, val) => v.users += val);
+
+      const rows = []; let gSig = 0, gFtd = 0;
+      Object.entries(espIpMap).forEach(([espIp, g]) => {
+        let sSig = 0, sFtd = 0;
+        g.order.forEach(k => { const r = g.items[k]; rows.push(r); sSig += r.signups; sFtd += r.ftds; });
+        if (sSig > 0 || sFtd > 0) { rows.push({ esp_ip: `GRAND TOTAL ${espIp}`, advertiser: '', brand: '', signups: sSig, ftds: sFtd, is_total: true }); gSig += sSig; gFtd += sFtd; }
       });
-
-      if (rows.length > 0) {
-        rows.push({
-          esp_ip: 'OVERALL GRAND TOTAL',
-          advertiser: '',
-          brand: '',
-          signups: grandSig,
-          ftds: grandFtd,
-          is_total: true,
-          is_overall: true
-        });
-      }
-
+      if (rows.length) rows.push({ esp_ip: 'OVERALL GRAND TOTAL', advertiser: '', brand: '', signups: gSig, ftds: gFtd, is_total: true, is_overall: true });
       agg.esp_ip_breakdown = rows;
 
       months.forEach(m => {
-        const opsMtd = m.team_ops_mtd;
-        if (!opsMtd) return;
-        ['signups_by_advertiser', 'users_by_advertiser'].forEach(prop => {
-          Object.entries(opsMtd[prop] || {}).forEach(([adv, v]) => {
-            if (!agg.ops[prop][adv]) agg.ops[prop][adv] = { andrea: 0, jessie: 0, total: 0 };
-            agg.ops[prop][adv].andrea += v.andrea || 0;
-            agg.ops[prop][adv].jessie += v.jessie || 0;
-            agg.ops[prop][adv].total += (v.andrea || 0) + (v.jessie || 0);
-          });
-        });
+        const opsMtd = m.team_ops_mtd; if (!opsMtd) return;
+        ['signups_by_advertiser','users_by_advertiser'].forEach(p => Object.entries(opsMtd[p] || {}).forEach(([adv, v]) => {
+          if (!agg.ops[p][adv]) agg.ops[p][adv] = { andrea: 0, jessie: 0, total: 0 };
+          agg.ops[p][adv].andrea += v.andrea || 0; agg.ops[p][adv].jessie += v.jessie || 0; agg.ops[p][adv].total += (v.andrea || 0) + (v.jessie || 0);
+        }));
       });
-
       agg.profit = agg.revenue - agg.budget;
       return agg;
     }
 
-    function getAdvertiserRollupRows(detailedRows) {
-      const advMap = {};
-      const order = [];
-
-      detailedRows.forEach(r => {
+    function getAdvertiserRollupRows(rows) {
+      const map = {}, order = [], espGroups = {}, out = [];
+      rows.forEach(r => {
         if (r.is_total || r.is_overall) return;
-        const esp = r.esp_ip;
-        const adv = r.advertiser;
-        const key = `${esp}___${adv}`;
-        if (!advMap[key]) {
-          advMap[key] = {
-            esp_ip: esp,
-            advertiser: adv,
-            brand: 'All Brands',
-            signups: 0,
-            ftds: 0,
-            brandCount: 0
-          };
-          order.push(key);
-        }
-        advMap[key].signups += (r.signups || 0);
-        advMap[key].ftds += (r.ftds || 0);
-        advMap[key].brandCount++;
+        const k = `${r.esp_ip}___${r.advertiser}`;
+        if (!map[k]) { map[k] = { esp_ip: r.esp_ip, advertiser: r.advertiser, brand: 'All Brands', signups: 0, ftds: 0, brandCount: 0 }; order.push(k); }
+        map[k].signups += r.signups || 0; map[k].ftds += r.ftds || 0; map[k].brandCount++;
       });
-
-      const collapsedRows = [];
-      const espGroups = {};
-      order.forEach(k => {
-        const item = advMap[k];
-        if (!espGroups[item.esp_ip]) espGroups[item.esp_ip] = [];
-        espGroups[item.esp_ip].push(item);
-      });
-
-      let grandSig = 0, grandFtd = 0;
-      Object.entries(espGroups).forEach(([espName, items]) => {
+      order.forEach(k => { const it = map[k]; (espGroups[it.esp_ip] || (espGroups[it.esp_ip] = [])).push(it); });
+      let gSig = 0, gFtd = 0;
+      Object.entries(espGroups).forEach(([esp, items]) => {
         items.sort((a, b) => (b.signups + b.ftds * 10) - (a.signups + a.ftds * 10));
-
-        let subSig = 0, subFtd = 0;
-        items.forEach(it => {
-          collapsedRows.push(it);
-          subSig += it.signups;
-          subFtd += it.ftds;
-        });
-
-        collapsedRows.push({
-          esp_ip: `GRAND TOTAL ${espName}`,
-          advertiser: '',
-          brand: '',
-          signups: subSig,
-          ftds: subFtd,
-          is_total: true
-        });
-
-        grandSig += subSig;
-        grandFtd += subFtd;
+        let sSig = 0, sFtd = 0;
+        items.forEach(it => { out.push(it); sSig += it.signups; sFtd += it.ftds; });
+        out.push({ esp_ip: `GRAND TOTAL ${esp}`, advertiser: '', brand: '', signups: sSig, ftds: sFtd, is_total: true });
+        gSig += sSig; gFtd += sFtd;
       });
-
-      if (collapsedRows.length > 0) {
-        collapsedRows.push({
-          esp_ip: 'OVERALL GRAND TOTAL',
-          advertiser: '',
-          brand: '',
-          signups: grandSig,
-          ftds: grandFtd,
-          is_total: true,
-          is_overall: true
-        });
-      }
-
-      return collapsedRows;
+      if (out.length) out.push({ esp_ip: 'OVERALL GRAND TOTAL', advertiser: '', brand: '', signups: gSig, ftds: gFtd, is_total: true, is_overall: true });
+      return out;
     }
 
     function toggleEspIpBreakdownDetails() {
       isEspIpExpanded = !isEspIpExpanded;
-      const btnText = $('espIpBtnText');
-      const btnIcon = $('espIpBtnIcon');
-      if (btnText) btnText.textContent = isEspIpExpanded ? 'Collapse All' : 'Show All';
-      if (btnIcon) {
-        btnIcon.innerHTML = isEspIpExpanded
-          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>'
-          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
-      }
+      setT('espIpBtnText', isEspIpExpanded ? 'Collapse All' : 'Show All');
+      const ic = $('espIpBtnIcon');
+      if (ic) ic.innerHTML = isEspIpExpanded ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
       renderEspIpBreakdown(cachedDetailedBreakdownRows);
     }
 
-    // Reparto exacto entero proporcional (Hamilton / Largest Remainder)
-    function distributeExactIntegerTotal(items, targetTotal, getWeight, setter) {
-      if (!items || items.length === 0) return;
-      if (items.length === 1) {
-        setter(items[0], Math.max(0, targetTotal || 0));
-        return;
-      }
-      if (!targetTotal || targetTotal <= 0) {
-        items.forEach(it => setter(it, 0));
-        return;
-      }
-
-      const weights = items.map(it => Math.max(0, getWeight(it) || 0));
-      let sumW = weights.reduce((a, b) => a + b, 0);
-
-      const effWeights = sumW > 0 ? weights : items.map(() => 1);
-      sumW = effWeights.reduce((a, b) => a + b, 0);
-
-      const quotas = effWeights.map(w => (w / sumW) * targetTotal);
-      const ints = quotas.map(q => Math.floor(q));
-      let remInt = targetTotal - ints.reduce((a, b) => a + b, 0);
-
-      const rems = quotas.map((q, idx) => ({ idx, rem: q - Math.floor(q) }));
-      rems.sort((a, b) => b.rem - a.rem);
-
-      for (let i = 0; i < remInt && i < rems.length; i++) {
-        ints[rems[i].idx]++;
-      }
-
-      items.forEach((it, idx) => setter(it, ints[idx]));
-    }
-
     async function updateDashboardForDateRange() {
-      const badge = $('dataStatusBadge');
-      if (badge) badge.classList.add('hidden');
-
+      const badge = $('dataStatusBadge'); if (badge) badge.classList.add('hidden');
       const agg = aggregateJsonData(currentStartDate, currentEndDate);
       const csvMap = await aggregateCsvForRange(currentStartDate, currentEndDate);
-
       const sortOrder = ['MLJ (Mailjet) IP 1', 'MLJ (Mailjet) IP 2', 'MLJ (Mailjet) IP 3 / SH', 'SEG (Sendgrid) IP 1', 'SEG (Sendgrid) IP 2 / SH'];
 
-      // 1. Mapeo estructurado por ESP asegurando que no se pierda ninguna fila
-      const breakdownByEsp = {};
-      sortOrder.forEach(e => { breakdownByEsp[e] = {}; });
-
+      const byEsp = {}; sortOrder.forEach(e => { byEsp[e] = {}; });
       (agg.esp_ip_breakdown || []).forEach(r => {
         if (r.is_total || r.is_overall) return;
-        const esp = (r.esp_ip || '').trim();
-        const adv = (r.advertiser || '-').trim();
-        const br = (r.brand || '-').trim();
+        const esp = (r.esp_ip || '').trim(), adv = (r.advertiser || '-').trim(), br = (r.brand || '-').trim();
         if (!esp || isExcludedEsp(esp)) return;
-
-        const sig = r.signups || 0;
-        const ftd = r.ftds || 0;
-
-        const key = `${adv}___${br}`;
-        if (!breakdownByEsp[esp]) breakdownByEsp[esp] = {};
-        if (!breakdownByEsp[esp][key]) {
-          breakdownByEsp[esp][key] = {
-            esp_ip: esp,
-            advertiser: adv,
-            brand: br,
-            signups: 0,
-            ftds: 0,
-            origSig: sig,
-            origFtd: ftd
-          };
-        } else {
-          breakdownByEsp[esp][key].origSig += sig;
-          breakdownByEsp[esp][key].origFtd += ftd;
-        }
+        const k = `${adv}___${br}`;
+        if (!byEsp[esp]) byEsp[esp] = {};
+        if (!byEsp[esp][k]) byEsp[esp][k] = { esp_ip: esp, advertiser: adv, brand: br, signups: 0, ftds: 0, origSig: r.signups || 0, origFtd: r.ftds || 0 };
+        else { byEsp[esp][k].origSig += r.signups || 0; byEsp[esp][k].origFtd += r.ftds || 0; }
       });
 
-      // 2. NORMALIZACIÓN DE MARCAS (Brand Breakdown Table = Molde de la verdad absoluta)
-      const normalizedBrands = {};
-      Object.entries(agg.brands).forEach(([bName, bData]) => {
-        const cleanName = bName.trim();
-        const cleanKey = cleanName.toLowerCase();
-        if (!normalizedBrands[cleanKey]) {
-          normalizedBrands[cleanKey] = {
-            name: cleanName,
-            advertiser: (bData.advertiser || '-').trim(),
-            signups: 0,
-            users: 0,
-            revenue: 0
-          };
-        }
-        normalizedBrands[cleanKey].signups += (bData.signups || 0);
-        normalizedBrands[cleanKey].users += (bData.users || 0);
-        normalizedBrands[cleanKey].revenue += (bData.revenue || 0);
+      const normBrands = {};
+      Object.entries(agg.brands).forEach(([bName, d]) => {
+        const cn = bName.trim(), ck = cn.toLowerCase();
+        if (!normBrands[ck]) normBrands[ck] = { name: cn, advertiser: (d.advertiser || '-').trim(), signups: 0, users: 0, revenue: 0 };
+        normBrands[ck].signups += d.signups || 0; normBrands[ck].users += d.users || 0; normBrands[ck].revenue += d.revenue || 0;
       });
 
-      const processedBrands = new Set();
-      let unassignedRot = 0;
-
-      // 3. ASIGNACIÓN ESTRICTA MARCA POR MARCA (Cada marca tiene exactamente lo de Brand Table)
-      Object.values(normalizedBrands).forEach(bData => {
-        const bName = bData.name;
-        const bKey = bName.toLowerCase();
-        const targetSig = bData.signups || 0;
-        const targetFtd = bData.users || 0;
-        const adv = bData.advertiser || '-';
-        processedBrands.add(bKey);
-
+      const seenBrands = new Set(); let rot = 0;
+      Object.values(normBrands).forEach(b => {
+        const bk = b.name.toLowerCase(), adv = b.advertiser || '-'; seenBrands.add(bk);
         const matching = [];
-        Object.entries(breakdownByEsp).forEach(([esp, group]) => {
-          Object.values(group).forEach(item => {
-            if (item.brand.toLowerCase() === bKey) {
-              if (adv !== '-' && (!item.advertiser || item.advertiser === '-')) {
-                item.advertiser = adv;
-              }
-              matching.push(item);
-            }
-          });
-        });
-
-        // Si la marca no estaba en el desglose, la asignamos fija a su IP correspondiente
-        if (matching.length === 0) {
-          let chosenEsp = null;
-          if (bKey.includes('cardcrush')) chosenEsp = 'MLJ (Mailjet) IP 1';
-          else if (bKey.includes('luckybunny direct')) chosenEsp = 'SEG (Sendgrid) IP 2 / SH';
-          else {
-            for (const esp of sortOrder) {
-              if (breakdownByEsp[esp] && Object.values(breakdownByEsp[esp]).some(it => it.advertiser.toLowerCase() === adv.toLowerCase())) {
-                chosenEsp = esp;
-                break;
-              }
-            }
-            if (!chosenEsp) {
-              chosenEsp = sortOrder[unassignedRot % sortOrder.length];
-              unassignedRot++;
-            }
-          }
-
-          if (!breakdownByEsp[chosenEsp]) breakdownByEsp[chosenEsp] = {};
-          const key = `${adv}___${bName}`;
-          const newRow = {
-            esp_ip: chosenEsp,
-            advertiser: adv,
-            brand: bName,
-            signups: 0,
-            ftds: 0,
-            origSig: targetSig,
-            origFtd: targetFtd
-          };
-          breakdownByEsp[chosenEsp][key] = newRow;
-          matching.push(newRow);
+        Object.values(byEsp).forEach(g => Object.values(g).forEach(it => {
+          if (it.brand.toLowerCase() === bk) { if (adv !== '-' && (!it.advertiser || it.advertiser === '-')) it.advertiser = adv; matching.push(it); }
+        }));
+        if (!matching.length) {
+          let chosen = bk.includes('cardcrush') ? sortOrder[0] : (bk.includes('luckybunny direct') ? sortOrder[4] : null);
+          if (!chosen) chosen = sortOrder.find(e => byEsp[e] && Object.values(byEsp[e]).some(it => it.advertiser.toLowerCase() === adv.toLowerCase())) || sortOrder[rot++ % sortOrder.length];
+          if (!byEsp[chosen]) byEsp[chosen] = {};
+          const nr = { esp_ip: chosen, advertiser: adv, brand: b.name, signups: 0, ftds: 0, origSig: b.signups, origFtd: b.users };
+          byEsp[chosen][`${adv}___${b.name}`] = nr; matching.push(nr);
         }
-
-        // a) Reparto exacto de Signups para esta marca entre sus IPs
-        distributeExactIntegerTotal(
-          matching,
-          targetSig,
-          it => (it.origSig > 0 ? it.origSig : 1),
-          (it, val) => { it.signups = val; }
-        );
-
-        // b) Reparto exacto de FTDs para esta marca entre sus IPs
-        const hasOrigFtds = matching.some(it => (it.origFtd || 0) > 0);
-        distributeExactIntegerTotal(
-          matching,
-          targetFtd,
-          it => (hasOrigFtds ? (it.origFtd || 0) : (it.signups || 0)),
-          (it, val) => { it.ftds = val; }
-        );
+        distributeExactIntegerTotal(matching, b.signups, it => it.origSig > 0 ? it.origSig : 1, (it, v) => it.signups = v);
+        const hasFtd = matching.some(it => it.origFtd > 0);
+        distributeExactIntegerTotal(matching, b.users, it => hasFtd ? it.origFtd : it.signups, (it, v) => it.ftds = v);
       });
 
-      // Limpiar filas de marcas no presentes
-      Object.values(breakdownByEsp).forEach(group => {
-        Object.values(group).forEach(item => {
-          if (!processedBrands.has(item.brand.toLowerCase())) {
-            item.signups = 0;
-            item.ftds = 0;
-          }
-        });
+      Object.values(byEsp).forEach(g => Object.values(g).forEach(it => { if (!seenBrands.has(it.brand.toLowerCase())) { it.signups = 0; it.ftds = 0; } }));
+      const allItems = Object.values(byEsp).flatMap(g => Object.values(g));
+      syncBreakdownMissing(allItems, agg.advertisers, 'signups', 'signups', [it => it.signups, it => it.origSig], agg.signups - Object.values(normBrands).reduce((a, b) => a + b.signups, 0));
+      syncBreakdownMissing(allItems, agg.advertisers, 'ftds', 'users', [it => it.origFtd, it => it.signups, it => it.origSig], agg.users - Object.values(normBrands).reduce((a, b) => a + b.users, 0));
+
+      const knownEsps = Array.from(new Set([...sortOrder, ...Object.keys(byEsp)])).filter(e => !isExcludedEsp(e));
+      const newRows = []; let grandSig = 0, grandFtd = 0;
+      knownEsps.forEach(esp => {
+        const items = Object.values(byEsp[esp] || {}).filter(it => it.signups > 0 || it.ftds > 0);
+        if (!items.length) return;
+        items.sort((a, b) => (b.signups + b.ftds * 10) - (a.signups + a.ftds * 10));
+        let sSig = 0, sFtd = 0;
+        items.forEach(it => { newRows.push(it); sSig += it.signups; sFtd += it.ftds; });
+        newRows.push({ esp_ip: `GRAND TOTAL ${esp}`, advertiser: '', brand: '', signups: sSig, ftds: sFtd, is_total: true });
+        grandSig += sSig; grandFtd += sFtd;
       });
+      if (newRows.length) newRows.push({ esp_ip: 'OVERALL GRAND TOTAL', advertiser: '', brand: '', signups: grandSig, ftds: grandFtd, is_total: true, is_overall: true });
+      agg.esp_ip_breakdown = newRows;
 
-      // 3b. Sincronizar si hay FTDs en agg.users que no estuvieron en r.brands
-      const totalAssignedBrandFtds = Object.values(normalizedBrands).reduce((acc, b) => acc + (b.users || 0), 0);
-      if (agg.users > 0 && totalAssignedBrandFtds < agg.users) {
-        let missingFtds = agg.users - totalAssignedBrandFtds;
-        const allItems = Object.values(breakdownByEsp).flatMap(g => Object.values(g));
-
-        let assignedByAdv = 0;
-        const advEntries = Object.entries(agg.advertisers).filter(([, v]) => (v.users || 0) > 0);
-        if (advEntries.length > 0 && allItems.length > 0) {
-          advEntries.forEach(([advName, advData]) => {
-            const advKey = advName.trim().toLowerCase();
-            const advItems = allItems.filter(it => (it.advertiser || '').trim().toLowerCase() === advKey);
-            const currentAdvFtds = advItems.reduce((a, it) => a + (it.ftds || 0), 0);
-            const need = Math.max(0, (advData.users || 0) - currentAdvFtds);
-            if (need > 0 && advItems.length > 0) {
-              const hasOrig = advItems.some(it => (it.origFtd || 0) > 0);
-              const extras = new Array(advItems.length).fill(0);
-              distributeExactIntegerTotal(
-                advItems.map((it, idx) => ({ it, idx })),
-                need,
-                x => (hasOrig ? (x.it.origFtd || 0) : ((x.it.signups || 0) || (x.it.origSig || 0) || 1)),
-                (x, val) => { extras[x.idx] = val; }
-              );
-              advItems.forEach((it, idx) => { it.ftds += extras[idx]; });
-              assignedByAdv += need;
-            }
-          });
-        }
-
-        missingFtds = Math.max(0, missingFtds - assignedByAdv);
-
-        if (missingFtds > 0 && allItems.length > 0) {
-          const activeItems = allItems.filter(it => (it.signups || 0) > 0 || (it.origFtd || 0) > 0 || (it.origSig || 0) > 0);
-          const pool = activeItems.length > 0 ? activeItems : allItems;
-          const hasOrig = pool.some(it => (it.origFtd || 0) > 0);
-          const extras = new Array(pool.length).fill(0);
-          distributeExactIntegerTotal(
-            pool.map((it, idx) => ({ it, idx })),
-            missingFtds,
-            x => (hasOrig ? (x.it.origFtd || 0) : ((x.it.signups || 0) || (x.it.origSig || 0) || 1)),
-            (x, val) => { extras[x.idx] = val; }
-          );
-          pool.forEach((it, idx) => { it.ftds += extras[idx]; });
-        }
-      }
-
-      // 4. Reconstrucción de filas para la tabla ESP / IP Breakdown
-      const allKnownEsps = Array.from(new Set([...sortOrder, ...Object.keys(breakdownByEsp)])).filter(e => !isExcludedEsp(e));
-      const newBreakdownRows = [];
-      let grandSig = 0, grandFtd = 0;
-
-      allKnownEsps.forEach(espName => {
-        const group = breakdownByEsp[espName] || {};
-        const items = Object.values(group).filter(it => (it.signups || 0) > 0 || (it.ftds || 0) > 0);
-        if (items.length === 0) return;
-
-        items.sort((a, b) => ((b.signups || 0) + (b.ftds || 0) * 10) - ((a.signups || 0) + (a.ftds || 0) * 10));
-
-        let subSig = 0, subFtd = 0;
-        items.forEach(it => {
-          newBreakdownRows.push(it);
-          subSig += (it.signups || 0);
-          subFtd += (it.ftds || 0);
-        });
-
-        newBreakdownRows.push({
-          esp_ip: `GRAND TOTAL ${espName}`,
-          advertiser: '',
-          brand: '',
-          signups: subSig,
-          ftds: subFtd,
-          is_total: true
-        });
-
-        grandSig += subSig;
-        grandFtd += subFtd;
-      });
-
-      if (newBreakdownRows.length > 0) {
-        newBreakdownRows.push({
-          esp_ip: 'OVERALL GRAND TOTAL',
-          advertiser: '',
-          brand: '',
-          signups: grandSig,
-          ftds: grandFtd,
-          is_total: true,
-          is_overall: true
-        });
-      }
-
-      agg.esp_ip_breakdown = newBreakdownRows;
-
-      // 5. Vincular subtotales exactos a la tabla superior EMAIL PERFORMANCE BY ESP
-      const espTotalsFromBreakdown = {};
-      newBreakdownRows.forEach(r => {
-        if (r.is_total && !r.is_overall) {
-          const espName = r.esp_ip.replace(/^GRAND TOTAL\s+/i, '').trim();
-          if (!isExcludedEsp(espName)) {
-            espTotalsFromBreakdown[espName] = { signups: r.signups || 0, ftds: r.ftds || 0 };
-          }
-        }
-      });
-
-      sortOrder.forEach(espName => {
-        if (!csvMap[espName]) {
-          csvMap[espName] = {
-            esp: espName, delivered: 0, softBounce: 0, hardBounce: 0,
-            bounced: 0, opened: 0, clicked: 0, unsub: 0, signups: 0, players: 0, domains: {}
-          };
-        }
-      });
-
-      Object.values(csvMap).forEach(item => {
-        if (!isExcludedEsp(item.esp)) {
-          const bd = espTotalsFromBreakdown[item.esp] || { signups: 0, ftds: 0 };
-          item.signups = bd.signups || 0;
-          item.players = bd.ftds || 0;
-        }
-      });
-
-      const list = Object.values(csvMap).filter(e => !isExcludedEsp(e.esp));
-      list.sort((a, b) => {
-        const idxA = sortOrder.indexOf(a.esp);
-        const idxB = sortOrder.indexOf(b.esp);
-        return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
-      });
-
-      agg.esp = list;
-
-      ['delivered', 'softBounce', 'hardBounce', 'bounced', 'opened', 'clicked', 'unsub'].forEach(k => {
-        agg[k] = agg.esp.reduce((acc, cur) => acc + (cur[k] || 0), 0);
-      });
-
-      agg.espSignups = grandSig;
-      agg.espPlayers = grandFtd;
+      const espTot = {};
+      newRows.forEach(r => { if (r.is_total && !r.is_overall) { const e = r.esp_ip.replace(/^GRAND TOTAL\s+/i, '').trim(); if (!isExcludedEsp(e)) espTot[e] = { signups: r.signups, ftds: r.ftds }; } });
+      sortOrder.forEach(e => { if (!csvMap[e]) csvMap[e] = { esp: e, delivered: 0, softBounce: 0, hardBounce: 0, bounced: 0, opened: 0, clicked: 0, unsub: 0, signups: 0, players: 0, domains: {} }; });
+      Object.values(csvMap).forEach(it => { if (!isExcludedEsp(it.esp)) { const bd = espTot[it.esp] || {}; it.signups = bd.signups || 0; it.players = bd.ftds || 0; } });
+      agg.esp = Object.values(csvMap).filter(e => !isExcludedEsp(e.esp)).sort((a, b) => (sortOrder.indexOf(a.esp) + 1 || 100) - (sortOrder.indexOf(b.esp) + 1 || 100));
+      ['delivered','softBounce','hardBounce','bounced','opened','clicked','unsub'].forEach(k => agg[k] = agg.esp.reduce((a, c) => a + (c[k] || 0), 0));
+      agg.espSignups = grandSig; agg.espPlayers = grandFtd;
 
       renderDashboard(agg, currentStartDate, currentEndDate);
     }
 
     function renderDashboard(agg, s, e) {
-      const [sy, sm, sd] = s.split('-').map(Number);
-      const [ey, em, ed] = e.split('-').map(Number);
-
-      const daysInEndMonth = new Date(ey, em, 0).getDate();
-      const totalMonthDays = agg.totalMonthDays > 0 ? agg.totalMonthDays : daysInEndMonth;
-
-      let elapsedDays = (sy === ey && sm === em && sd === 1)
-        ? ed
-        : Math.max(1, Math.round((new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / (1000 * 60 * 60 * 24)) + 1);
-
-      const rrF = elapsedDays > 0 ? (totalMonthDays / elapsedDays) : 1;
+      const [sy, sm, sd] = s.split('-').map(Number), [ey, em, ed] = e.split('-').map(Number);
+      const totalDays = agg.totalMonthDays > 0 ? agg.totalMonthDays : new Date(ey, em, 0).getDate();
+      const elapsed = (sy === ey && sm === em && sd === 1) ? ed : Math.max(1, Math.round((new Date(ey, em - 1, ed) - new Date(sy, sm - 1, sd)) / 86400000) + 1);
+      const rrF = elapsed > 0 ? totalDays / elapsed : 1;
       const [rrB, rrS, rrU, rrR, rrP] = [agg.budget, agg.signups, agg.users, agg.revenue, agg.profit].map(v => Math.round(v * rrF));
-      const rrClicks = Math.round((agg.clicked || 0) * rrF);
 
-      setT('teamKpiBudget', `$${Math.round(agg.kpi.budget).toLocaleString()}`);
-      setT('teamKpiSignups', Math.round(agg.kpi.signups).toLocaleString());
-      setT('teamKpiUsers', Math.round(agg.kpi.users).toLocaleString());
-      setT('teamKpiRevenue', `$${Math.round(agg.kpi.revenue).toLocaleString()}`);
+      setT('teamKpiBudget', `$${Math.round(agg.kpi.budget).toLocaleString()}`); setT('teamKpiSignups', Math.round(agg.kpi.signups).toLocaleString());
+      setT('teamKpiUsers', Math.round(agg.kpi.users).toLocaleString()); setT('teamKpiRevenue', `$${Math.round(agg.kpi.revenue).toLocaleString()}`);
       setT('teamKpiProfit', `$${Math.round(agg.kpi.profit).toLocaleString()}`);
-      setT('teamMtdBudget', `$${Math.round(agg.budget).toLocaleString()}`);
-      setT('teamMtdSignups', agg.signups.toLocaleString());
-      setT('teamMtdUsers', agg.users.toLocaleString());
-      setT('teamMtdRevenue', `$${Math.round(agg.revenue).toLocaleString()}`);
+      setT('teamMtdBudget', `$${Math.round(agg.budget).toLocaleString()}`); setT('teamMtdSignups', agg.signups.toLocaleString());
+      setT('teamMtdUsers', agg.users.toLocaleString()); setT('teamMtdRevenue', `$${Math.round(agg.revenue).toLocaleString()}`);
       setT('teamMtdProfit', `$${Math.round(agg.profit).toLocaleString()}`);
 
-      const setRrCell = (id, text, rrVal, kpiVal) => {
-        const el = $(id);
-        if (!el) return;
-        el.textContent = text;
-        el.className = `px-2.5 py-3 text-sm font-bold ${rrVal >= kpiVal ? 'text-emerald-600' : 'text-rose-600'}`;
-      };
-
-      setRrCell('teamRrBudget', `$${rrB.toLocaleString()}`, rrB, Math.round(agg.kpi.budget));
-      setRrCell('teamRrSignups', rrS.toLocaleString(), rrS, Math.round(agg.kpi.signups));
-      setRrCell('teamRrUsers', rrU.toLocaleString(), rrU, Math.round(agg.kpi.users));
-      setRrCell('teamRrRevenue', `$${rrR.toLocaleString()}`, rrR, Math.round(agg.kpi.revenue));
-      setRrCell('teamRrProfit', `$${rrP.toLocaleString()}`, rrP, Math.round(agg.kpi.profit));
+      const setRr = (id, txt, rv, kv) => { const el = $(id); if (el) { el.textContent = txt; el.className = `px-2.5 py-3 text-sm font-bold ${rv >= kv ? 'text-emerald-600' : 'text-rose-600'}`; } };
+      setRr('teamRrBudget', `$${rrB.toLocaleString()}`, rrB, Math.round(agg.kpi.budget)); setRr('teamRrSignups', rrS.toLocaleString(), rrS, Math.round(agg.kpi.signups));
+      setRr('teamRrUsers', rrU.toLocaleString(), rrU, Math.round(agg.kpi.users)); setRr('teamRrRevenue', `$${rrR.toLocaleString()}`, rrR, Math.round(agg.kpi.revenue));
+      setRr('teamRrProfit', `$${rrP.toLocaleString()}`, rrP, Math.round(agg.kpi.profit));
       setT('teamRrRoi', `1:${rrB > 0 ? (rrR / rrB).toFixed(1) : '0.0'}`);
 
-      setT('kpiDelivered', (agg.delivered || 0).toLocaleString());
-      setT('kpiOpened', (agg.opened || 0).toLocaleString());
-      setT('kpiClicked', (agg.clicked || 0).toLocaleString());
-      setT('kpiBounced', (agg.bounced || 0).toLocaleString());
-      setT('kpiUnsub', (agg.unsub || 0).toLocaleString());
-      setT('kpiSignups', agg.signups.toLocaleString());
-      setT('kpiUsers', agg.users.toLocaleString());
-      setT('kpiRevenue', `$${Math.round(agg.revenue).toLocaleString()}`);
-      setT('kpiBudget', `$${Math.round(agg.budget).toLocaleString()}`);
-      setT('kpiProfit', `$${Math.round(agg.profit).toLocaleString()}`);
-
+      setT('kpiDelivered', agg.delivered.toLocaleString()); setT('kpiOpened', agg.opened.toLocaleString()); setT('kpiClicked', agg.clicked.toLocaleString());
+      setT('kpiBounced', agg.bounced.toLocaleString()); setT('kpiUnsub', agg.unsub.toLocaleString()); setT('kpiSignups', agg.signups.toLocaleString());
+      setT('kpiUsers', agg.users.toLocaleString()); setT('kpiRevenue', `$${Math.round(agg.revenue).toLocaleString()}`);
+      setT('kpiBudget', `$${Math.round(agg.budget).toLocaleString()}`); setT('kpiProfit', `$${Math.round(agg.profit).toLocaleString()}`);
       setT('kpiOpenRate', `${agg.delivered > 0 ? ((agg.opened / agg.delivered) * 100).toFixed(2) : '0.00'}% Open Rate`);
       setT('kpiClickRate', `${agg.delivered > 0 ? ((agg.clicked / agg.delivered) * 100).toFixed(2) : '0.00'}% Click Rate`);
       setT('kpiBounceRate', `${agg.delivered > 0 ? ((agg.bounced / agg.delivered) * 100).toFixed(2) : '0.00'}% bounce`);
+      setT('cardRrClicksSub', `RR: ${Math.round((agg.clicked || 0) * rrF).toLocaleString()}`);
 
-      setT('cardRrClicksSub', `RR: ${rrClicks.toLocaleString()}`);
+      const setCardRr = (id, txt, rv, kv) => { const el = $(id); if (el) { el.textContent = txt; el.className = `font-bold ${rv >= kv ? 'text-emerald-600' : 'text-rose-600'}`; } };
+      setT('cardKpiSignupsSub', `KPI: ${Math.round(agg.kpi.signups).toLocaleString()}`); setCardRr('cardRrSignupsSub', `RR: ${rrS.toLocaleString()}`, rrS, Math.round(agg.kpi.signups));
+      setT('cardKpiUsersSub', `KPI: ${Math.round(agg.kpi.users).toLocaleString()}`); setCardRr('cardRrUsersSub', `RR: ${rrU.toLocaleString()}`, rrU, Math.round(agg.kpi.users));
+      setT('cardKpiRevenueSub', `KPI: $${(agg.kpi.revenue / 1000).toFixed(1)}k`); setCardRr('cardRrRevenueSub', `RR: $${(rrR / 1000).toFixed(1)}k`, rrR, agg.kpi.revenue);
+      setT('cardKpiBudgetSub', `KPI: $${(agg.kpi.budget / 1000).toFixed(1)}k`); setCardRr('cardRrBudgetSub', `RR: $${(rrB / 1000).toFixed(1)}k`, rrB, agg.kpi.budget);
+      setT('cardKpiProfitSub', `KPI: $${(agg.kpi.profit / 1000).toFixed(1)}k`); setCardRr('cardRrProfitSub', `RR: $${(rrP / 1000).toFixed(1)}k`, rrP, agg.kpi.profit);
 
-      const setCardRr = (id, text, rrVal, kpiVal) => {
-        const el = $(id);
-        if (!el) return;
-        el.textContent = text;
-        el.className = `font-bold ${rrVal >= kpiVal ? 'text-emerald-600' : 'text-rose-600'}`;
-      };
-
-      setT('cardKpiSignupsSub', `KPI: ${Math.round(agg.kpi.signups).toLocaleString()}`);
-      setCardRr('cardRrSignupsSub', `RR: ${rrS.toLocaleString()}`, rrS, Math.round(agg.kpi.signups));
-
-      setT('cardKpiUsersSub', `KPI: ${Math.round(agg.kpi.users).toLocaleString()}`);
-      setCardRr('cardRrUsersSub', `RR: ${rrU.toLocaleString()}`, rrU, Math.round(agg.kpi.users));
-
-      setT('cardKpiRevenueSub', `KPI: $${(agg.kpi.revenue / 1000).toFixed(1)}k`);
-      setCardRr('cardRrRevenueSub', `RR: $${(rrR / 1000).toFixed(1)}k`, rrR, agg.kpi.revenue);
-
-      setT('cardKpiBudgetSub', `KPI: $${(agg.kpi.budget / 1000).toFixed(1)}k`);
-      setCardRr('cardRrBudgetSub', `RR: $${(rrB / 1000).toFixed(1)}k`, rrB, agg.kpi.budget);
-
-      setT('cardKpiProfitSub', `KPI: $${(agg.kpi.profit / 1000).toFixed(1)}k`);
-      setCardRr('cardRrProfitSub', `RR: $${(rrP / 1000).toFixed(1)}k`, rrP, agg.kpi.profit);
-
-      const rangeTxt = `${s} – ${e}`;
-      setT('dateRangeNotice', rangeTxt); setT('opsPeriodBadge', rangeTxt);
-
-      renderEspTable(agg.esp, agg);
-      renderEspIpBreakdown(agg.esp_ip_breakdown);
-      renderOpsTeam(agg.ops, rrF, agg.kpi);
-      renderAdvAndBrand(agg);
-      updateCharts(agg);
+      setT('dateRangeNotice', `${s} – ${e}`); setT('opsPeriodBadge', `${s} – ${e}`);
+      renderEspTable(agg.esp, agg); renderEspIpBreakdown(agg.esp_ip_breakdown); renderOpsTeam(agg.ops); renderAdvAndBrand(agg); updateCharts(agg);
     }
 
-    function renderEspIpBreakdown(detailedRows) {
-      cachedDetailedBreakdownRows = detailedRows || [];
-      const tbody = $('espIpBreakdownTableBody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-
-      if (!detailedRows || !detailedRows.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">No breakdown data available for this range.</td></tr>`;
-        setT('espIpGrandSignups', '0');
-        setT('espIpGrandFtds', '0');
-        return;
-      }
-
-      const rowsToRender = isEspIpExpanded ? detailedRows : getAdvertiserRollupRows(detailedRows);
-
-      let gSig = 0, gFtd = 0, hasOverall = false;
-
-      rowsToRender.forEach(r => {
-        if (r.is_overall || r.esp_ip?.toUpperCase().includes('OVERALL GRAND TOTAL')) {
-          gSig = r.signups || 0;
-          gFtd = r.ftds || 0;
-          hasOverall = true;
-          return;
-        }
-
-        const tr = document.createElement('tr');
+    function renderEspIpBreakdown(rows) {
+      cachedDetailedBreakdownRows = rows || [];
+      const tb = $('espIpBreakdownTableBody'); if (!tb) return;
+      if (!rows?.length) { tb.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">No breakdown data available for this range.</td></tr>`; setT('espIpGrandSignups', '0'); setT('espIpGrandFtds', '0'); return; }
+      let html = '', gSig = 0, gFtd = 0, hasOv = false;
+      (isEspIpExpanded ? rows : getAdvertiserRollupRows(rows)).forEach(r => {
+        if (r.is_overall || r.esp_ip?.toUpperCase().includes('OVERALL GRAND TOTAL')) { gSig = r.signups || 0; gFtd = r.ftds || 0; hasOv = true; return; }
         if (r.is_total || r.esp_ip?.toUpperCase().startsWith('GRAND TOTAL')) {
-          tr.className = 'bg-slate-100 font-bold text-slate-900';
-          tr.innerHTML = `
-            <td colspan="3" class="py-2 px-4 text-left uppercase">${r.esp_ip}</td>
-            <td class="py-2 px-4 text-right font-mono text-amber-600">${(r.signups || 0).toLocaleString()}</td>
-            <td class="py-2 px-4 text-right font-mono text-indigo-600">${(r.ftds || 0).toLocaleString()}</td>
-          `;
+          html += `<tr class="bg-slate-100 font-bold text-slate-900"><td colspan="3" class="py-2 px-4 text-left uppercase">${r.esp_ip}</td><td class="py-2 px-4 text-right font-mono text-amber-600">${(r.signups || 0).toLocaleString()}</td><td class="py-2 px-4 text-right font-mono text-indigo-600">${(r.ftds || 0).toLocaleString()}</td></tr>`;
         } else {
-          tr.className = 'hover:bg-slate-50 bg-white';
-          const brandDisplay = isEspIpExpanded
-            ? (r.brand || '-')
-            : `<span class="text-slate-400 italic text-xs font-normal">All Brands (${r.brandCount || 1})</span>`;
-
-          tr.innerHTML = `
-            <td class="py-2 px-4 text-left font-medium text-slate-800">${r.esp_ip || '-'}</td>
-            <td class="py-2 px-4 text-left font-semibold text-slate-700">${r.advertiser || '-'}</td>
-            <td class="py-2 px-4 text-left">${brandDisplay}</td>
-            <td class="py-2 px-4 text-right font-mono font-bold text-amber-600">${(r.signups || 0).toLocaleString()}</td>
-            <td class="py-2 px-4 text-right font-mono font-bold text-indigo-600">${(r.ftds || 0).toLocaleString()}</td>
-          `;
-          if (!hasOverall) {
-            gSig += r.signups || 0;
-            gFtd += r.ftds || 0;
-          }
+          const br = isEspIpExpanded ? (r.brand || '-') : `<span class="text-slate-400 italic text-xs font-normal">All Brands (${r.brandCount || 1})</span>`;
+          html += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left font-medium text-slate-800">${r.esp_ip || '-'}</td><td class="py-2 px-4 text-left font-semibold text-slate-700">${r.advertiser || '-'}</td><td class="py-2 px-4 text-left">${br}</td><td class="py-2 px-4 text-right font-mono font-bold text-amber-600">${(r.signups || 0).toLocaleString()}</td><td class="py-2 px-4 text-right font-mono font-bold text-indigo-600">${(r.ftds || 0).toLocaleString()}</td></tr>`;
+          if (!hasOv) { gSig += r.signups || 0; gFtd += r.ftds || 0; }
         }
-        tbody.appendChild(tr);
       });
-
-      setT('espIpGrandSignups', gSig.toLocaleString());
-      setT('espIpGrandFtds', gFtd.toLocaleString());
+      tb.innerHTML = html; setT('espIpGrandSignups', gSig.toLocaleString()); setT('espIpGrandFtds', gFtd.toLocaleString());
     }
 
     function renderEspTable(list, agg) {
-      const tb = $('espTableBody'), tf = $('espTableFoot');
       let html = '';
       list.forEach(i => {
         const v = i.delivered + (i.softBounce || 0) + (i.hardBounce || 0);
@@ -1799,192 +755,108 @@
           html += `<tr class="domain-row text-xs text-slate-600 ${areDetailsExpanded ? '' : 'hidden'}"><td class="py-1.5 px-4 text-left pl-8">${dom}</td><td class="font-mono">${(d.delivered + d.softBounce + d.hardBounce).toLocaleString()}</td><td>${d.delivered.toLocaleString()}</td><td class="text-amber-700">${d.softBounce.toLocaleString()}</td><td class="text-rose-700">${d.hardBounce.toLocaleString()}</td><td class="text-emerald-700">${d.opened.toLocaleString()}</td><td class="text-sky-700">${d.clicked.toLocaleString()}</td><td class="text-slate-400 font-mono text-center">-</td><td class="text-slate-400 font-mono text-center">-</td></tr>`;
         });
       });
-      tb.innerHTML = html;
+      $('espTableBody').innerHTML = html;
       const totVol = (agg.delivered || 0) + (agg.softBounce || 0) + (agg.hardBounce || 0);
-      tf.innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers || 0).toLocaleString()}</td></tr>`;
+      $('espTableFoot').innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers || 0).toLocaleString()}</td></tr>`;
     }
 
-    function renderOpsTeam(ops, rrF, kpi) {
-      ['signups', 'users'].forEach(kind => {
-        const tb = $(`ops${kind === 'signups' ? 'Signups' : 'Users'}TableBody`), master = ops[`${kind}_by_advertiser`];
-        let html = '';
-        let [tA, tJ] = [0, 0];
-        Object.entries(master || {}).forEach(([adv, r]) => {
+    function renderOpsTeam(ops) {
+      ['signups','users'].forEach(k => {
+        const p = k === 'signups' ? 'Signups' : 'Users'; let html = '', tA = 0, tJ = 0;
+        Object.entries(ops[`${k}_by_advertiser`] || {}).forEach(([adv, r]) => {
           tA += r.andrea; tJ += r.jessie;
           html += `<tr class="hover:bg-slate-50 bg-white"><td class="py-1.5 px-3 text-left font-medium text-slate-900">${adv}</td><td class="py-1.5 px-3 font-mono font-bold">${r.andrea}</td><td class="py-1.5 px-3 font-mono font-bold">${r.jessie}</td><td class="py-1.5 px-3 font-mono font-bold">${r.total}</td></tr>`;
         });
-        tb.innerHTML = html;
-        setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}AndreaTotal`, tA);
-        setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}JessieTotal`, tJ);
-        setT(`ops${kind === 'signups' ? 'Signups' : 'Users'}GrandTotal`, tA + tJ);
+        $(`ops${p}TableBody`).innerHTML = html; setT(`ops${p}AndreaTotal`, tA); setT(`ops${p}JessieTotal`, tJ); setT(`ops${p}GrandTotal`, tA + tJ);
       });
     }
 
     function renderAdvAndBrand(agg) {
-      const aTb = $('advertiserTableBody'), bTb = $('brandTableBody');
       let aHtml = '', bHtml = '';
-      Object.entries(agg.advertisers).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([name, d]) => {
-        aHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2.5 px-4 text-left font-medium">${name}</td><td class="py-2.5 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2.5 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
+      Object.entries(agg.advertisers).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([n, d]) => {
+        aHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2.5 px-4 text-left font-medium">${n}</td><td class="py-2.5 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2.5 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
       });
-      Object.entries(agg.brands).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([bName, d]) => {
-        bHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left">${bName}</td><td class="py-2 px-4 text-left font-medium">${d.advertiser}</td><td class="py-2 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
+      Object.entries(agg.brands).sort((a, b) => b[1].revenue - a[1].revenue).forEach(([bn, d]) => {
+        bHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left">${bn}</td><td class="py-2 px-4 text-left font-medium">${d.advertiser}</td><td class="py-2 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
       });
-      aTb.innerHTML = aHtml;
-      bTb.innerHTML = bHtml;
-      ['adv', 'brand'].forEach(p => {
-        setT(`${p}GrandSignups`, agg.signups); setT(`${p}GrandUsers`, agg.users);
-        setT(`${p}GrandRevenue`, `$${Math.round(agg.revenue).toLocaleString()}`);
-        setT(`${p}GrandS2p`, formatS2P(agg.signups, agg.users));
-      });
-      initialTableState['advertiserTable'] = aTb.innerHTML;
-      initialTableState['brandTable'] = bTb.innerHTML;
+      $('advertiserTableBody').innerHTML = initialTableState['advertiserTable'] = aHtml;
+      $('brandTableBody').innerHTML = initialTableState['brandTable'] = bHtml;
+      ['adv','brand'].forEach(p => { setT(`${p}GrandSignups`, agg.signups); setT(`${p}GrandUsers`, agg.users); setT(`${p}GrandRevenue`, `$${Math.round(agg.revenue).toLocaleString()}`); setT(`${p}GrandS2p`, formatS2P(agg.signups, agg.users)); });
     }
 
     function initCharts() {
-      const opt = (cb) => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, callback: cb } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } } });
+      const opt = cb => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 }, callback: cb } }, x: { grid: { display: false }, ticks: { font: { size: 9 } } } } });
       chartRefs.espVol = new Chart($('chartEspVolumen'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Delivered', data: [], backgroundColor: '#2563eb' }, { label: 'Open', data: [], backgroundColor: '#10b981' }] }, options: { ...opt(v => v >= 1000 ? v / 1000 + 'k' : v), plugins: { legend: { position: 'top' } } } });
       chartRefs.espClicks = new Chart($('chartEspClicks'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Clicks', data: [], backgroundColor: '#0284c7' }] }, options: opt() });
       chartRefs.espOpenRate = new Chart($('chartEspOpenRate'), { type: 'bar', data: { labels: [], datasets: [{ label: 'Open Rate (%)', data: [], backgroundColor: '#10b981' }] }, options: opt(v => v + '%') });
-
       chartRefs.domDeliv = new Chart($('chartDomainDelivered'), {
         type: 'pie',
-        data: {
-          labels: ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Hotmail', 'Aol'],
-          datasets: [{
-            data: [],
-            backgroundColor: ['#2563eb', '#94a3b8', '#7c3aed', '#06b6d4', '#0284c7', '#f59e0b', '#ec4899'],
-            borderWidth: 1.5,
-            borderColor: '#ffffff'
-          }]
-        },
+        data: { labels: ['Gmail','Other','Yahoo','iCloud','Outlook','Hotmail','Aol'], datasets: [{ data: [], backgroundColor: ['#2563eb','#94a3b8','#7c3aed','#06b6d4','#0284c7','#f59e0b','#ec4899'], borderWidth: 1.5, borderColor: '#ffffff' }] },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'right',
-              labels: {
-                boxWidth: 10,
-                font: { size: 9 },
-                generateLabels: function (chart) {
-                  const data = chart.data;
-                  if (data.labels.length && data.datasets.length) {
-                    const dataset = data.datasets[0];
-                    const total = dataset.data.reduce((a, b) => a + (b || 0), 0);
-                    return data.labels.map((label, i) => {
-                      const val = dataset.data[i] || 0;
-                      const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-                      return {
-                        text: `${label}: ${pct}%`,
-                        fillStyle: dataset.backgroundColor[i],
-                        strokeStyle: dataset.backgroundColor[i],
-                        lineWidth: 0,
-                        index: i
-                      };
-                    });
-                  }
-                  return [];
-                }
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function (context) {
-                  const val = context.raw || 0;
-                  const total = context.chart.data.datasets[0].data.reduce((a, b) => a + (b || 0), 0);
-                  const pct = total > 0 ? ((val / total) * 100).toFixed(2) : 0;
-                  return ` ${context.label}: ${val.toLocaleString()} (${pct}%)`;
-                }
-              }
-            }
+            legend: { position: 'right', labels: { boxWidth: 10, font: { size: 9 }, generateLabels: c => { const ds = c.data.datasets[0], tot = ds.data.reduce((a, b) => a + (b || 0), 0); return c.data.labels.map((l, i) => ({ text: `${l}: ${tot > 0 ? (((ds.data[i] || 0) / tot) * 100).toFixed(1) : '0.0'}%`, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], lineWidth: 0, index: i })); } } },
+            tooltip: { callbacks: { label: ctx => { const v = ctx.raw || 0, tot = ctx.chart.data.datasets[0].data.reduce((a, b) => a + (b || 0), 0); return ` ${ctx.label}: ${v.toLocaleString()} (${tot > 0 ? ((v / tot) * 100).toFixed(2) : 0}%)`; } } }
           }
         }
       });
-
-      chartRefs.domOpenRate = new Chart($('chartDomainOpenRate'), { type: 'bar', data: { labels: ['iCloud', 'Outlook', 'Yahoo', 'Aol', 'Hotmail', 'Gmail', 'Other'], datasets: [{ data: [], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%', font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } } });
-      chartRefs.domClicks = new Chart($('chartDomainClicks'), { type: 'bar', data: { labels: ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Aol', 'Hotmail'], datasets: [{ data: [], backgroundColor: '#0284c7' }] }, options: opt() });
+      chartRefs.domOpenRate = new Chart($('chartDomainOpenRate'), { type: 'bar', data: { labels: ['iCloud','Outlook','Yahoo','Aol','Hotmail','Gmail','Other'], datasets: [{ data: [], backgroundColor: '#10b981' }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%', font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } } });
+      chartRefs.domClicks = new Chart($('chartDomainClicks'), { type: 'bar', data: { labels: ['Gmail','Other','Yahoo','iCloud','Outlook','Aol','Hotmail'], datasets: [{ data: [], backgroundColor: '#0284c7' }] }, options: opt() });
     }
 
     function updateCharts(agg) {
       if (!chartRefs.espVol) return;
-      const espLabels = (agg.esp || []).map(e => e.esp.replace(' (Mailjet)', '').replace(' (Sendgrid)', ''));
-      chartRefs.espVol.data.labels = espLabels; chartRefs.espVol.data.datasets[0].data = agg.esp.map(e => e.delivered); chartRefs.espVol.data.datasets[1].data = agg.esp.map(e => e.opened); chartRefs.espVol.update();
-      chartRefs.espClicks.data.labels = espLabels; chartRefs.espClicks.data.datasets[0].data = agg.esp.map(e => e.clicked); chartRefs.espClicks.update();
-      chartRefs.espOpenRate.data.labels = espLabels; chartRefs.espOpenRate.data.datasets[0].data = agg.esp.map(e => e.delivered > 0 ? +((e.opened / e.delivered) * 100).toFixed(2) : 0); chartRefs.espOpenRate.update();
+      const lbl = (agg.esp || []).map(e => e.esp.replace(' (Mailjet)', '').replace(' (Sendgrid)', ''));
+      chartRefs.espVol.data.labels = lbl; chartRefs.espVol.data.datasets[0].data = agg.esp.map(e => e.delivered); chartRefs.espVol.data.datasets[1].data = agg.esp.map(e => e.opened); chartRefs.espVol.update();
+      chartRefs.espClicks.data.labels = lbl; chartRefs.espClicks.data.datasets[0].data = agg.esp.map(e => e.clicked); chartRefs.espClicks.update();
+      chartRefs.espOpenRate.data.labels = lbl; chartRefs.espOpenRate.data.datasets[0].data = agg.esp.map(e => e.delivered > 0 ? +((e.opened / e.delivered) * 100).toFixed(2) : 0); chartRefs.espOpenRate.update();
 
       const dAgg = { Gmail: 0, Other: 0, Yahoo: 0, iCloud: 0, Outlook: 0, Hotmail: 0, Aol: 0 }, dOp = { ...dAgg }, dCl = { ...dAgg };
-      const domCanonical = { gmail: 'Gmail', other: 'Other', yahoo: 'Yahoo', icloud: 'iCloud', outlook: 'Outlook', hotmail: 'Hotmail', aol: 'Aol' };
+      const domCan = { gmail: 'Gmail', other: 'Other', yahoo: 'Yahoo', icloud: 'iCloud', outlook: 'Outlook', hotmail: 'Hotmail', aol: 'Aol' };
       (agg.esp || []).forEach(e => Object.entries(e.domains || {}).forEach(([dom, v]) => {
-        const target = domCanonical[String(dom).trim().toLowerCase()] || 'Other';
-        dAgg[target] += v.delivered || 0;
-        dOp[target] += v.opened || 0;
-        dCl[target] += v.clicked || 0;
+        const t = domCan[String(dom).trim().toLowerCase()] || 'Other';
+        dAgg[t] += v.delivered || 0; dOp[t] += v.opened || 0; dCl[t] += v.clicked || 0;
       }));
-
-      chartRefs.domDeliv.data.datasets[0].data = ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Hotmail', 'Aol'].map(d => dAgg[d]);
-      chartRefs.domDeliv.update();
-
-      chartRefs.domOpenRate.data.datasets[0].data = ['iCloud', 'Outlook', 'Yahoo', 'Aol', 'Hotmail', 'Gmail', 'Other'].map(d => dAgg[d] > 0 ? +((dOp[d] / dAgg[d]) * 100).toFixed(2) : 0); chartRefs.domOpenRate.update();
-      chartRefs.domClicks.data.datasets[0].data = ['Gmail', 'Other', 'Yahoo', 'iCloud', 'Outlook', 'Aol', 'Hotmail'].map(d => dCl[d]); chartRefs.domClicks.update();
+      chartRefs.domDeliv.data.datasets[0].data = ['Gmail','Other','Yahoo','iCloud','Outlook','Hotmail','Aol'].map(d => dAgg[d]); chartRefs.domDeliv.update();
+      chartRefs.domOpenRate.data.datasets[0].data = ['iCloud','Outlook','Yahoo','Aol','Hotmail','Gmail','Other'].map(d => dAgg[d] > 0 ? +((dOp[d] / dAgg[d]) * 100).toFixed(2) : 0); chartRefs.domOpenRate.update();
+      chartRefs.domClicks.data.datasets[0].data = ['Gmail','Other','Yahoo','iCloud','Outlook','Aol','Hotmail'].map(d => dCl[d]); chartRefs.domClicks.update();
     }
 
-    function parseSortValue(text, type) {
-      const clean = (text || '').trim();
+    function parseSortValue(txt, type) {
+      const c = (txt || '').trim();
       if (type === 'ratio') {
-        const parts = clean.split(':').map(n => parseFloat(n.replace(/[^0-9.-]/g, '')));
-        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          const [a, b] = parts;
-          if (a > 0 && b > 0) return a / b;
-          if (a === 0 && b > 0) return -b * 0.0001;
-          return -1;
-        }
+        const p = c.split(':').map(n => parseFloat(n.replace(/[^0-9.-]/g, '')));
+        if (p.length === 2 && !isNaN(p[0]) && !isNaN(p[1])) return p[0] > 0 && p[1] > 0 ? p[0] / p[1] : (p[0] === 0 && p[1] > 0 ? -p[1] * 0.0001 : -1);
       }
-      return parseFloat(clean.replace(/[^0-9.-]/g, '')) || 0;
+      return parseFloat(c.replace(/[^0-9.-]/g, '')) || 0;
     }
 
-    function sortTable(tableId, col, btn, type) {
-      const tbody = $(tableId).querySelector('tbody'); if (!tbody) return;
-      const rows = Array.from(tbody.querySelectorAll('tr')), dir = (tableSortDirections[tableId]?.[col] === 'desc') ? 'asc' : 'desc';
-      tableSortDirections[tableId] = { [col]: dir };
-      $(tableId).querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅');
+    function sortTable(id, col, btn, type) {
+      const tb = $(id)?.querySelector('tbody'); if (!tb) return;
+      const rows = Array.from(tb.querySelectorAll('tr')), dir = tableSortDirections[id]?.[col] === 'desc' ? 'asc' : 'desc';
+      tableSortDirections[id] = { [col]: dir };
+      $(id).querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅');
       btn.querySelector('.sort-icon').textContent = dir === 'desc' ? '▼' : '▲';
-      rows.sort((a, b) => {
-        const numA = parseSortValue(a.children[col].innerText, type);
-        const numB = parseSortValue(b.children[col].innerText, type);
-        return dir === 'desc' ? (numB - numA) : (numA - numB);
-      });
-      tbody.innerHTML = ''; rows.forEach(r => tbody.appendChild(r));
+      rows.sort((a, b) => { const nA = parseSortValue(a.children[col].innerText, type), nB = parseSortValue(b.children[col].innerText, type); return dir === 'desc' ? nB - nA : nA - nB; });
+      tb.innerHTML = ''; rows.forEach(r => tb.appendChild(r));
     }
 
-    function resetTable(tableId) {
-      const tbl = $(tableId);
-      const tbody = tbl?.querySelector('tbody');
-      if (tbody && initialTableState[tableId]) {
-        tbody.innerHTML = initialTableState[tableId];
-        tableSortDirections[tableId] = {};
-        tbl.querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅');
-      }
+    function resetTable(id) {
+      const tbl = $(id), tb = tbl?.querySelector('tbody');
+      if (tb && initialTableState[id]) { tb.innerHTML = initialTableState[id]; tableSortDirections[id] = {}; tbl.querySelectorAll('.sort-btn .sort-icon').forEach(i => i.textContent = '⇅'); }
     }
 
     function toggleTableDetails() {
       areDetailsExpanded = !areDetailsExpanded;
       document.querySelectorAll('.domain-row').forEach(r => r.classList.toggle('hidden', !areDetailsExpanded));
       setT('btnText', areDetailsExpanded ? 'Collapse All' : 'Show All');
-      const icon = $('btnIcon');
-      if (icon) {
-        icon.innerHTML = areDetailsExpanded
-          ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>'
-          : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
-      }
+      const ic = $('btnIcon');
+      if (ic) ic.innerHTML = areDetailsExpanded ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
-      initCharts();
-      globalLoadedMonths = await loadAllMonths();
-      initDateControls();
-      await updateDashboardForDateRange();
+      initCharts(); globalLoadedMonths = await loadAllMonths(); initDateControls(); await updateDashboardForDateRange();
     });
   </script>
 </body>
-
 </html>
