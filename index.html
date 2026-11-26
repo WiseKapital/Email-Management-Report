@@ -27,6 +27,11 @@
     .esp-table tbody tr.domain-row { border-bottom: 1px solid #f1f5f9; background: #fff; }
     .esp-table tbody tr.domain-row:hover { background: #f8fafc; }
     .esp-table tfoot { border-top: 2.5px solid #485c44; background: #fff; }
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-pop { animation: modalPop 0.18s ease-out forwards; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen p-4 md:p-8">
@@ -241,6 +246,48 @@
     </div>
   </div>
 
+  <!-- SENDING DOMAINS MODAL -->
+  <div id="domainsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-xs" onclick="if (event.target === this) closeDomainsModal()">
+    <div class="modal-pop w-full max-w-6xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 bg-gradient-to-r from-[#3b4c37] to-[#485c44] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+          </div>
+          <div>
+            <h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">Sending Domains by ESP</h3>
+            <p id="domainsModalSubtitle" class="text-xs text-emerald-100/85">Active sending domains & subdomains</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <svg class="w-3.5 h-3.5 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-48 sm:w-56 pl-8 pr-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:bg-white/25 transition-colors">
+          </div>
+          <button type="button" onclick="closeDomainsModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors cursor-pointer" title="Close (ESC)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ESP Filter Tabs -->
+      <div id="domainsModalTabs" class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0"></div>
+
+      <!-- Modal Content -->
+      <div id="domainsModalBody" class="flex-1 overflow-y-auto p-6 bg-slate-50/60"></div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">ROOT</span> Main domain</span>
+          <span class="inline-flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">SUB</span> Subdomain</span>
+        </div>
+        <span id="domainsModalSource" class="font-medium text-slate-500">Source: Domains By ESP.xlsx</span>
+      </div>
+    </div>
+  </div>
+
   <script>
     const $ = id => document.getElementById(id), setT = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     const MONTH_KEYS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
@@ -258,7 +305,7 @@
       'MLJ (Mailjet) IP 3 / SH': ['getsomenewz.com','imperialsweeps.com','sunnynewz.com','am.getsomenewz.com','mj.getsomenewz.com']
     };
     let espSendingDomains = { ...DEFAULT_ESP_DOMAINS }, espDomainsLoadedFromExcel = false;
-    let expandedSendingEsps = new Set(), lastRenderedEspList = [], lastRenderedEspAgg = null;
+    let lastRenderedEspList = [], activeDomainsModalEsp = 'ALL';
 
     const escHtml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const escAttr = s => escHtml(s).replace(/"/g, '&quot;');
@@ -446,6 +493,10 @@
     document.addEventListener('click', e => {
       const p = $('customCalendarPopup');
       if (p && !p.contains(e.target) && !$('fromPillBtn').contains(e.target) && !$('toPillBtn').contains(e.target)) { p.classList.add('hidden'); resetPillStyles(); }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !$('domainsModal').classList.contains('hidden')) closeDomainsModal();
     });
 
     function parseCsvLine(line) {
@@ -826,45 +877,171 @@
       tb.innerHTML = html; setT('espIpGrandSignups', gSig.toLocaleString()); setT('espIpGrandFtds', gFtd.toLocaleString());
     }
 
-    function toggleEspSendingDomains(esp) {
-      if (!esp) return;
-      if (expandedSendingEsps.has(esp)) expandedSendingEsps.delete(esp);
-      else expandedSendingEsps.add(esp);
-      if (lastRenderedEspAgg) renderEspTable(lastRenderedEspList, lastRenderedEspAgg);
+    function getOrderedDomainEsps() {
+      const fromList = (lastRenderedEspList || []).map(i => i.esp).filter(e => (espSendingDomains[e] || []).length > 0);
+      const extras = Object.keys(espSendingDomains).filter(e => (espSendingDomains[e] || []).length > 0 && !fromList.includes(e));
+      return [...fromList, ...extras];
     }
 
-    function toggleAllEspSendingDomains() {
-      const esps = (lastRenderedEspList || []).filter(i => (espSendingDomains[i.esp] || []).length > 0).map(i => i.esp);
-      const allOpen = esps.length > 0 && esps.every(e => expandedSendingEsps.has(e));
-      if (allOpen) esps.forEach(e => expandedSendingEsps.delete(e));
-      else esps.forEach(e => expandedSendingEsps.add(e));
-      if (lastRenderedEspAgg) renderEspTable(lastRenderedEspList, lastRenderedEspAgg);
+    function openDomainsModal(esp = 'ALL') {
+      activeDomainsModalEsp = esp || 'ALL';
+      const inp = $('domainsModalSearch');
+      if (inp) inp.value = '';
+      $('domainsModal').classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+      renderDomainsModal();
+    }
+
+    function closeDomainsModal() {
+      $('domainsModal').classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function setDomainsModalTab(esp) {
+      activeDomainsModalEsp = esp || 'ALL';
+      renderDomainsModal();
+    }
+
+    function copyEspDomains(btn) {
+      const esp = btn?.dataset?.copyEsp;
+      const doms = espSendingDomains[esp] || [];
+      if (!doms.length) return;
+      const txt = doms.join('\n');
+      const done = () => {
+        const prev = btn.innerHTML;
+        btn.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg><span>Copied</span>`;
+        btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-600');
+        setTimeout(() => {
+          btn.innerHTML = prev;
+          btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-600');
+        }, 1400);
+      };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(() => {});
+      else {
+        const ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    }
+
+    function formatDomainDisplay(dom) {
+      const parts = String(dom || '').split('.');
+      if (parts.length > 2) {
+        return {
+          isSub: true,
+          html: `<span class="text-sky-600 font-semibold">${escHtml(parts[0])}.</span><span class="text-slate-800">${escHtml(parts.slice(1).join('.'))}</span>`
+        };
+      }
+      return { isSub: false, html: `<span class="text-slate-800 font-medium">${escHtml(dom)}</span>` };
+    }
+
+    function renderDomainsModal() {
+      const esps = getOrderedDomainEsps();
+      const totalSlots = esps.reduce((a, e) => a + (espSendingDomains[e]?.length || 0), 0);
+      const uniqueSet = new Set();
+      esps.forEach(e => (espSendingDomains[e] || []).forEach(d => uniqueSet.add(d.toLowerCase())));
+
+      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'All Sending Domains by ESP' : activeDomainsModalEsp);
+      setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL'
+        ? `${esps.length} ESPs • ${totalSlots} total assignments (${uniqueSet.size} unique domains)`
+        : `${(espSendingDomains[activeDomainsModalEsp] || []).length} active sending domains & subdomains`);
+      setT('domainsModalSource', espDomainsLoadedFromExcel ? 'Source: Domains By ESP.xlsx (live)' : 'Source: Domains By ESP.xlsx');
+
+      const tabCls = active => active
+        ? 'px-3 py-1.5 rounded-xl text-xs font-bold bg-[#485c44] text-white shadow-xs whitespace-nowrap cursor-pointer transition-all'
+        : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 whitespace-nowrap cursor-pointer transition-all';
+
+      let tabsHtml = `<button type="button" onclick="setDomainsModalTab('ALL')" class="${tabCls(activeDomainsModalEsp === 'ALL')}">All ESPs <span class="ml-1 opacity-75">(${totalSlots})</span></button>`;
+      esps.forEach(e => {
+        const shortName = e.replace(' (Mailjet)', '').replace(' (Sendgrid)', '');
+        const cnt = (espSendingDomains[e] || []).length;
+        tabsHtml += `<button type="button" data-esp="${escAttr(e)}" onclick="setDomainsModalTab(this.dataset.esp)" class="${tabCls(activeDomainsModalEsp === e)}">${escHtml(shortName)} <span class="ml-1 opacity-75">(${cnt})</span></button>`;
+      });
+      $('domainsModalTabs').innerHTML = tabsHtml;
+
+      renderDomainsModalBody();
+    }
+
+    function renderDomainsModalBody() {
+      const body = $('domainsModalBody');
+      if (!body) return;
+      const q = ($('domainsModalSearch')?.value || '').trim().toLowerCase();
+      const esps = activeDomainsModalEsp === 'ALL' ? getOrderedDomainEsps() : [activeDomainsModalEsp];
+      const isSingle = activeDomainsModalEsp !== 'ALL';
+
+      const cards = [];
+      esps.forEach(esp => {
+        const allDoms = espSendingDomains[esp] || [];
+        const filtered = allDoms.map((d, idx) => ({ d, num: idx + 1 })).filter(x => !q || x.d.toLowerCase().includes(q));
+        if (q && !filtered.length && !isSingle) return;
+
+        const subCount = allDoms.filter(d => d.split('.').length > 2).length;
+        const rootCount = allDoms.length - subCount;
+
+        const itemsHtml = filtered.length
+          ? filtered.map(x => {
+              const fmt = formatDomainDisplay(x.d);
+              const badge = fmt.isSub
+                ? `<span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[9px] font-bold shrink-0">SUB</span>`
+                : `<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold shrink-0">ROOT</span>`;
+              return `<div class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-50/80 hover:bg-[#eef2ee]/70 border border-slate-200/80 transition-colors">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-5 h-5 rounded-lg bg-[#485c44]/12 text-[#3b4c37] font-bold text-[10px] inline-flex items-center justify-center shrink-0">${x.num}</span>
+                  <span class="font-mono text-xs truncate" title="${escAttr(x.d)}">${fmt.html}</span>
+                </div>
+                ${badge}
+              </div>`;
+            }).join('')
+          : `<p class="text-xs text-slate-400 italic py-6 text-center col-span-full">No domains match "${escHtml(q)}"</p>`;
+
+        cards.push(`<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+          <div class="px-4 py-3 bg-[#f8faf8] border-b border-slate-200 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <h4 class="text-xs font-extrabold text-slate-900 truncate" title="${escAttr(esp)}">${escHtml(esp)}</h4>
+              <p class="text-[11px] text-slate-500 mt-0.5">${allDoms.length} total &bull; ${rootCount} root &bull; ${subCount} sub</p>
+            </div>
+            <button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shrink-0 cursor-pointer transition-colors" title="Copy domain list">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              <span>Copy</span>
+            </button>
+          </div>
+          <div class="p-3 ${isSingle ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2' : 'space-y-1.5'}">${itemsHtml}</div>
+        </div>`);
+      });
+
+      if (!cards.length) {
+        body.innerHTML = `<div class="py-12 text-center text-slate-400 text-sm">No domains match "<span class="font-semibold text-slate-600">${escHtml(q)}</span>".</div>`;
+        return;
+      }
+
+      body.innerHTML = isSingle
+        ? `<div class="max-w-4xl mx-auto">${cards.join('')}</div>`
+        : `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${cards.join('')}</div>`;
     }
 
     function renderEspTable(list, agg) {
       lastRenderedEspList = list || [];
-      lastRenderedEspAgg = agg;
       let html = '', totalDomainSlots = 0;
-      const uniqueDomains = new Set(), espsWithDoms = [];
+      const uniqueDomains = new Set();
 
       list.forEach(i => {
         const v = i.delivered + (i.softBounce || 0) + (i.hardBounce || 0);
         const sendingDoms = espSendingDomains[i.esp] || [];
         totalDomainSlots += sendingDoms.length;
         sendingDoms.forEach(d => uniqueDomains.add(d.toLowerCase()));
-        if (sendingDoms.length > 0) espsWithDoms.push(i.esp);
 
-        const isOpen = expandedSendingEsps.has(i.esp);
         const domainsCell = sendingDoms.length > 0
-          ? `<button type="button" data-esp="${escAttr(i.esp)}" onclick="toggleEspSendingDomains(this.dataset.esp)" title="${escAttr(sendingDoms.join(', '))}" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold ${isOpen ? 'bg-[#485c44] text-white border-[#485c44]' : 'bg-[#eef2ee] text-[#3b4c37] hover:bg-[#dfe7df] border-[#cbd5cb]'} border transition-colors cursor-pointer"><span>${sendingDoms.length}</span><svg class="w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg></button>`
+          ? `<div class="inline-flex items-center justify-end gap-2">
+               <span class="font-bold text-slate-800">${sendingDoms.length}</span>
+               <button type="button" data-esp="${escAttr(i.esp)}" onclick="openDomainsModal(this.dataset.esp)" title="View ${sendingDoms.length} domains for ${escAttr(i.esp)}"
+                 class="w-5 h-5 rounded-full bg-[#eef2ee] hover:bg-[#485c44] text-[#3b4c37] hover:text-white border border-[#cbd5cb] hover:border-[#485c44] inline-flex items-center justify-center transition-all shadow-2xs cursor-pointer">
+                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m-7-7h14"></path></svg>
+               </button>
+             </div>`
           : `<span class="text-slate-400">0</span>`;
 
         html += `<tr class="esp-summary-row"><td class="py-3 px-4 text-left font-bold">${escHtml(i.esp)}</td><td class="py-3 px-4 font-mono">${domainsCell}</td><td class="py-3 px-4 font-mono">${v.toLocaleString()}</td><td class="py-3 px-4 font-mono">${i.delivered.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-700">${(i.softBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-rose-700">${(i.hardBounce || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-emerald-700">${i.opened.toLocaleString()}</td><td class="py-3 px-4 font-mono text-sky-700">${i.clicked.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-600">${(i.signups || 0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-indigo-600">${(i.players || 0).toLocaleString()}</td></tr>`;
-
-        if (sendingDoms.length > 0) {
-          const domPills = sendingDoms.map((d, idx) => `<div class="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs shadow-2xs"><span class="w-4 h-4 rounded bg-[#485c44]/10 text-[#3b4c37] font-bold text-[10px] inline-flex items-center justify-center shrink-0">${idx + 1}</span><span class="font-mono text-slate-700">${escHtml(d)}</span></div>`).join('');
-          html += `<tr class="sending-domains-row bg-[#f4f7f4] border-b border-slate-200 ${isOpen ? '' : 'hidden'}"><td colspan="10" class="py-3 px-6 text-left"><div class="flex items-center justify-between mb-2"><span class="text-[11px] font-bold uppercase tracking-wider text-[#3b4c37]">Domains / Subdomains — ${escHtml(i.esp)} (${sendingDoms.length})</span><span class="text-[10px] text-slate-500 font-medium">${espDomainsLoadedFromExcel ? 'Loaded from Domains By ESP.xlsx' : 'Domains By ESP'}</span></div><div class="flex flex-wrap gap-2">${domPills}</div></td></tr>`;
-        }
 
         Object.entries(i.domains || {}).forEach(([dom, d]) => {
           html += `<tr class="domain-row text-xs text-slate-600 ${areDetailsExpanded ? '' : 'hidden'}"><td class="py-1.5 px-4 text-left pl-8">${escHtml(dom)}</td><td class="text-slate-400 font-mono text-center">-</td><td class="font-mono">${(d.delivered + d.softBounce + d.hardBounce).toLocaleString()}</td><td>${d.delivered.toLocaleString()}</td><td class="text-amber-700">${d.softBounce.toLocaleString()}</td><td class="text-rose-700">${d.hardBounce.toLocaleString()}</td><td class="text-emerald-700">${d.opened.toLocaleString()}</td><td class="text-sky-700">${d.clicked.toLocaleString()}</td><td class="text-slate-400 font-mono text-center">-</td><td class="text-slate-400 font-mono text-center">-</td></tr>`;
@@ -873,9 +1050,15 @@
 
       $('espTableBody').innerHTML = html;
       const totVol = (agg.delivered || 0) + (agg.softBounce || 0) + (agg.hardBounce || 0);
-      const allOpen = espsWithDoms.length > 0 && espsWithDoms.every(e => expandedSendingEsps.has(e));
       const footDomCell = totalDomainSlots > 0
-        ? `<button type="button" onclick="toggleAllEspSendingDomains()" title="${totalDomainSlots} total assignments (${uniqueDomains.size} unique) - Click to expand/collapse all" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold ${allOpen ? 'bg-[#485c44] text-white border-[#485c44]' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-300'} border transition-colors cursor-pointer"><span>${totalDomainSlots}</span><span class="text-[10px] font-medium opacity-75">(${uniqueDomains.size} uniq.)</span><svg class="w-3 h-3 transition-transform ${allOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg></button>`
+        ? `<div class="inline-flex items-center justify-end gap-2">
+             <span class="font-bold text-slate-900">${totalDomainSlots}</span>
+             <span class="text-[11px] font-medium text-slate-400">(${uniqueDomains.size} uniq.)</span>
+             <button type="button" onclick="openDomainsModal('ALL')" title="View all ${totalDomainSlots} domains (${uniqueDomains.size} unique)"
+               class="w-5 h-5 rounded-full bg-[#485c44] hover:bg-[#3b4c37] text-white inline-flex items-center justify-center transition-all shadow-xs cursor-pointer">
+               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m-7-7h14"></path></svg>
+             </button>
+           </div>`
         : `0`;
       $('espTableFoot').innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${footDomCell}</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups || 0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers || 0).toLocaleString()}</td></tr>`;
     }
