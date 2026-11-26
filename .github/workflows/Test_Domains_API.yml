@@ -11,10 +11,10 @@ jobs:
           node-version: '20'
       - name: Probar SendGrid y Mailjet por dominio
         env:
-          SG_KEY_1: ${{ secrets.SG_KEY_1 }}
-          SG_KEY_2: ${{ secrets.SG_KEY_2 }}
-          MJ_KEY_1: ${{ secrets.MJ_KEY_1 }}
-          MJ_SECRET_1: ${{ secrets.MJ_SECRET_1 }}
+          SG_KEY_1: ${{ secrets.SEG }}
+          SG_KEY_2: ${{ secrets.SEGSH }}
+          MJ_KEY_1: ${{ secrets.MLJ1 }}
+          MJ_SECRET_1: ${{ secrets.MLJ1_SECRET }}
         run: |
           node -e '
           async function testSG(name, key) {
