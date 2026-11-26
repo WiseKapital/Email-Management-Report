@@ -322,7 +322,7 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     ]);
     for (const em of invalidEmails) bouncedEmails.add(em);
 
-    // 2) Email Activity API (/v3/messages) con manejo real del rate-limit (6 req/min)
+    // 2) Email Activity API (/v3/messages) con manejo de rate-limit (6 req/min) y reintentos ante timeout
     let nextAllowedAt = 0;
 
     async function sgActivityFetch(url, intentos = 8) {
@@ -330,29 +330,38 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
             const esperaAntes = nextAllowedAt - Date.now();
             if (esperaAntes > 0) await esperar(esperaAntes);
 
-            const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
-            const rem = res.headers.get('x-ratelimit-remaining');
-            const resetMs = parseResetMs(res.headers.get('x-ratelimit-reset'));
+            try {
+                const res = await fetch(url, { headers, signal: AbortSignal.timeout(60000) });
+                const rem = res.headers.get('x-ratelimit-remaining');
+                const resetMs = parseResetMs(res.headers.get('x-ratelimit-reset'));
 
-            if (rem !== null && Number(rem) <= 0) {
-                nextAllowedAt = Math.max(Date.now() + 12000, resetMs > 0 ? resetMs + 2000 : 0);
-            }
+                if (rem !== null && Number(rem) <= 0) {
+                    nextAllowedAt = Math.max(Date.now() + 12000, resetMs > 0 ? resetMs + 2000 : 0);
+                }
 
-            if (res.ok) return await res.json();
+                if (res.ok) return await res.json();
 
-            if (res.status === 429 && i < intentos) {
-                const backoff = Math.min(65000, i * 15000);
-                const waitMs = Math.max(backoff, resetMs > 0 ? (resetMs - Date.now() + 2000) : 0);
-                console.log(`${nombreCuenta} RateLimit /v3/messages (intento ${i}/${intentos}), esperando ${Math.ceil(waitMs / 1000)}s...`);
-                nextAllowedAt = Date.now() + waitMs;
-                continue;
+                if (res.status === 429 && i < intentos) {
+                    const backoff = Math.min(65000, i * 15000);
+                    const waitMs = Math.max(backoff, resetMs > 0 ? (resetMs - Date.now() + 2000) : 0);
+                    console.log(`${nombreCuenta} RateLimit /v3/messages (intento ${i}/${intentos}), esperando ${Math.ceil(waitMs / 1000)}s...`);
+                    nextAllowedAt = Date.now() + waitMs;
+                    continue;
+                }
+                if ([500, 502, 503, 504].includes(res.status) && i < intentos) {
+                    await esperar(i * 3000);
+                    continue;
+                }
+                const errTxt = await res.text().catch(() => '');
+                throw new Error(`SendGrid /v3/messages HTTP ${res.status} ${errTxt}`);
+            } catch (err) {
+                if (i < intentos && !String(err.message).includes('HTTP 4')) {
+                    console.log(`${nombreCuenta} aviso red/timeout (intento ${i}/${intentos}): ${err.message}, reintentando...`);
+                    await esperar(i * 5000);
+                    continue;
+                }
+                throw err;
             }
-            if ([500, 502, 503, 504].includes(res.status) && i < intentos) {
-                await esperar(i * 3000);
-                continue;
-            }
-            const errTxt = await res.text().catch(() => '');
-            throw new Error(`SendGrid /v3/messages HTTP ${res.status} ${errTxt}`);
         }
     }
 
@@ -372,7 +381,7 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
 
         if (msgs.length >= 1000) {
             const spanSec = Math.floor((endMs - startMs) / 1000);
-            if (spanSec > 10) {
+            if (spanSec > 1) {
                 const midSec = Math.floor((startMs + endMs) / 2000);
                 const midMs = midSec * 1000;
                 await fetchWindow(startMs, midMs, extraFilter);
@@ -380,12 +389,21 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
             } else if (!extraFilter) {
                 await fetchWindow(startMs, endMs, ' AND status="delivered"');
                 await fetchWindow(startMs, endMs, ' AND status="not_delivered"');
-                await fetchWindow(startMs, endMs, ' AND status="processed"');
+                await fetchWindow(startMs, endMs, ' AND status="processing"');
+            } else if (extraFilter === ' AND status="delivered"') {
+                await fetchWindow(startMs, endMs, ' AND status="delivered" AND to_email < "f"');
+                await fetchWindow(startMs, endMs, ' AND status="delivered" AND to_email >= "f" AND to_email < "l"');
+                await fetchWindow(startMs, endMs, ' AND status="delivered" AND to_email >= "l" AND to_email < "r"');
+                await fetchWindow(startMs, endMs, ' AND status="delivered" AND to_email >= "r"');
             }
         }
     }
 
-    await fetchWindow(fromMs, toMs);
+    // Arrancamos en 4 bloques de 6 horas para consultas más livianas y rápidas
+    const stepMs = 6 * 60 * 60 * 1000;
+    for (let t = fromMs; t < toMs; t += stepMs) {
+        await fetchWindow(t, Math.min(t + stepMs - 1000, toMs));
+    }
     console.log(`${nombreCuenta} mensajes recuperados por actividad: ${msgMap.size}`);
 
     const porDominio = {};
