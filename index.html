@@ -172,31 +172,6 @@
       </div>
     </div>
 
-    <div class="space-y-6 pt-2">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div class="flex items-center gap-2"><span class="px-2.5 py-0.5 rounded bg-indigo-800 text-white text-xs font-bold uppercase">Team Ops</span><h2 class="text-lg font-bold text-slate-800">Email Operations Performance</h2></div>
-        <span id="opsPeriodBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">Filtered Period</span>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-          <h3 class="text-base font-bold text-slate-900 mb-3">Registrations by team</h3>
-          <table class="w-full text-sm text-right excel-table">
-            <thead class="theme-header-aff text-white text-xs uppercase font-semibold"><tr><th class="py-2 px-3 text-left">Advertiser</th><th class="py-2 px-3">Andrea ('a')</th><th class="py-2 px-3">Jessie ('j')</th><th class="py-2 px-3">Total</th></tr></thead>
-            <tbody id="opsSignupsTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td class="py-2 px-3 text-left">Grand Total</td><td id="opsSignupsAndreaTotal" class="font-mono text-amber-600">0</td><td id="opsSignupsJessieTotal" class="font-mono text-amber-600">0</td><td id="opsSignupsGrandTotal" class="font-mono text-amber-700">0</td></tr></tfoot>
-          </table>
-        </div>
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-          <h3 class="text-base font-bold text-slate-900 mb-3">Users / FTD by team</h3>
-          <table class="w-full text-sm text-right excel-table">
-            <thead class="theme-header-aff text-white text-xs uppercase font-semibold"><tr><th class="py-2 px-3 text-left">Advertiser</th><th class="py-2 px-3">Andrea ('a')</th><th class="py-2 px-3">Jessie ('j')</th><th class="py-2 px-3">Total</th></tr></thead>
-            <tbody id="opsUsersTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td class="py-2 px-3 text-left">Grand Total</td><td id="opsUsersAndreaTotal" class="font-mono text-indigo-600">0</td><td id="opsUsersJessieTotal" class="font-mono text-indigo-600">0</td><td id="opsUsersGrandTotal" class="font-mono text-indigo-700">0</td></tr></tfoot>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <div class="space-y-6 pt-4">
       <div class="flex items-center gap-2 border-b border-slate-200 pb-2"><span class="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-bold uppercase">Section 2</span><h2 class="text-lg font-bold text-slate-800">Advertiser Performance & Revenue</h2></div>
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -532,8 +507,7 @@
     function aggregateJsonData(s, e) {
       const agg = {
         budget: 0, signups: 0, users: 0, revenue: 0, daysElapsedInRange: 0, totalMonthDays: 0,
-        kpi: { budget: 0, signups: 0, users: 0, revenue: 0, profit: 0 }, advertisers: {}, brands: {}, esp_ip_breakdown: [],
-        ops: { jessie: { signups: 0, users: 0 }, andrea: { signups: 0, users: 0 }, signups_by_advertiser: {}, users_by_advertiser: {} }
+        kpi: { budget: 0, signups: 0, users: 0, revenue: 0, profit: 0 }, advertisers: {}, brands: {}, esp_ip_breakdown: []
       };
       const months = globalLoadedMonths.filter(m => (m.daily_records || []).some(r => { const d = normDate(r.date); return d >= s && d <= e; }));
       let monthRealUsers = 0, monthRealRevenue = 0, monthRealSignups = 0, mtdBreakdownUsers = 0;
@@ -572,7 +546,6 @@
             else if (agg.brands[cb].advertiser === '-' && v.advertiser) agg.brands[cb].advertiser = v.advertiser;
             agg.brands[cb].signups += v.signups || 0; agg.brands[cb].users += (v.users ?? v.ftds ?? v.players ?? 0); agg.brands[cb].revenue += v.revenue || 0;
           });
-          if (r.ops) ['andrea','jessie'].forEach(p => { if (r.ops[p]) { agg.ops[p].signups += r.ops[p].signups || 0; agg.ops[p].users += r.ops[p].users || 0; } });
           if (Array.isArray(r.esp_ip_breakdown) && !mtdRows.length) r.esp_ip_breakdown.forEach(it => addBd(it.esp_ip, it.advertiser, it.brand, it.signups, it.ftds));
         });
       });
@@ -621,14 +594,6 @@
       });
       if (rows.length) rows.push({ esp_ip: 'OVERALL GRAND TOTAL', advertiser: '', brand: '', signups: gSig, ftds: gFtd, is_total: true, is_overall: true });
       agg.esp_ip_breakdown = rows;
-
-      months.forEach(m => {
-        const opsMtd = m.team_ops_mtd; if (!opsMtd) return;
-        ['signups_by_advertiser','users_by_advertiser'].forEach(p => Object.entries(opsMtd[p] || {}).forEach(([adv, v]) => {
-          if (!agg.ops[p][adv]) agg.ops[p][adv] = { andrea: 0, jessie: 0, total: 0 };
-          agg.ops[p][adv].andrea += v.andrea || 0; agg.ops[p][adv].jessie += v.jessie || 0; agg.ops[p][adv].total += (v.andrea || 0) + (v.jessie || 0);
-        }));
-      });
       agg.profit = agg.revenue - agg.budget;
       return agg;
     }
@@ -767,8 +732,8 @@
       setT('cardKpiBudgetSub', `KPI: $${(agg.kpi.budget/1000).toFixed(1)}k`); setCardRr('cardRrBudgetSub', `RR: $${(rrB/1000).toFixed(1)}k`, rrB, agg.kpi.budget);
       setT('cardKpiProfitSub', `KPI: $${(agg.kpi.profit/1000).toFixed(1)}k`); setCardRr('cardRrProfitSub', `RR: $${(rrP/1000).toFixed(1)}k`, rrP, agg.kpi.profit);
 
-      setT('dateRangeNotice', `${s} – ${e}`); setT('opsPeriodBadge', `${s} – ${e}`);
-      renderEspTable(agg.esp, agg); renderEspIpBreakdown(agg.esp_ip_breakdown); renderOpsTeam(agg.ops); renderAdvAndBrand(agg); updateCharts(agg);
+      setT('dateRangeNotice', `${s} – ${e}`);
+      renderEspTable(agg.esp, agg); renderEspIpBreakdown(agg.esp_ip_breakdown); renderAdvAndBrand(agg); updateCharts(agg);
     }
 
     function renderEspIpBreakdown(rows) {
@@ -950,17 +915,6 @@
       const totVol = (agg.delivered || 0) + (agg.softBounce || 0) + (agg.hardBounce || 0);
       const footDom = `<div class="inline-flex items-center justify-end gap-2"><span class="font-bold text-slate-900">${slots}</span><span class="text-[11px] font-medium text-slate-400">(${uniq.size} uniq.)</span><button type="button" onclick="openDomainsModal('ALL')" title="View/edit all domains" class="w-5 h-5 rounded-full bg-[#166534] hover:bg-[#14532d] text-white inline-flex items-center justify-center font-bold text-xs cursor-pointer">+</button></div>`;
       $('espTableFoot').innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${footDom}</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers||0).toLocaleString()}</td></tr>`;
-    }
-
-    function renderOpsTeam(ops) {
-      ['signups','users'].forEach(k => {
-        const p = k === 'signups' ? 'Signups' : 'Users'; let html = '', tA = 0, tJ = 0;
-        Object.entries(ops[`${k}_by_advertiser`] || {}).forEach(([adv, r]) => {
-          tA += r.andrea; tJ += r.jessie;
-          html += `<tr class="hover:bg-slate-50 bg-white"><td class="py-1.5 px-3 text-left font-medium text-slate-900">${adv}</td><td class="py-1.5 px-3 font-mono font-bold">${r.andrea}</td><td class="py-1.5 px-3 font-mono font-bold">${r.jessie}</td><td class="py-1.5 px-3 font-mono font-bold">${r.total}</td></tr>`;
-        });
-        $(`ops${p}TableBody`).innerHTML = html; setT(`ops${p}AndreaTotal`, tA); setT(`ops${p}JessieTotal`, tJ); setT(`ops${p}GrandTotal`, tA + tJ);
-      });
     }
 
     function renderAdvAndBrand(agg) {
