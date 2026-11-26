@@ -272,6 +272,13 @@ async function procesarSendgrid(apiKey, fechaStr) {
 // =======================================================
 // 2B. SENDGRID - BREAKDOWN POR DOMINIO / SUBDOMINIO
 // =======================================================
+function parseResetMs(resetHeader) {
+    if (!resetHeader) return 0;
+    const n = Number(resetHeader);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return n > 1e9 ? n * 1000 : Date.now() + n * 1000;
+}
+
 async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     const headers = { Authorization: `Bearer ${apiKey}` };
     const [y, m, d] = fechaStr.split('-').map(Number);
@@ -315,34 +322,33 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     ]);
     for (const em of invalidEmails) bouncedEmails.add(em);
 
-    // 2) Email Activity API (/v3/messages) con manejo automático de rate-limit (6 req/min)
+    // 2) Email Activity API (/v3/messages) con manejo real del rate-limit (6 req/min)
     let nextAllowedAt = 0;
 
-    async function sgActivityFetch(url, intentos = 6) {
+    async function sgActivityFetch(url, intentos = 8) {
         for (let i = 1; i <= intentos; i++) {
             const esperaAntes = nextAllowedAt - Date.now();
             if (esperaAntes > 0) await esperar(esperaAntes);
 
             const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
             const rem = res.headers.get('x-ratelimit-remaining');
-            const reset = res.headers.get('x-ratelimit-reset');
-            if (reset) {
-                const resetMs = Number(reset) * 1000 + 1500;
-                if (rem !== null && Number(rem) <= 0) {
-                    nextAllowedAt = Math.max(nextAllowedAt, resetMs);
-                }
+            const resetMs = parseResetMs(res.headers.get('x-ratelimit-reset'));
+
+            if (rem !== null && Number(rem) <= 0) {
+                nextAllowedAt = Math.max(Date.now() + 12000, resetMs > 0 ? resetMs + 2000 : 0);
             }
 
             if (res.ok) return await res.json();
 
             if (res.status === 429 && i < intentos) {
-                const waitMs = reset ? Math.max(3000, Number(reset) * 1000 - Date.now() + 1500) : 15000;
-                console.log(`${nombreCuenta} RateLimit /v3/messages, esperando ${Math.ceil(waitMs / 1000)}s...`);
+                const backoff = Math.min(65000, i * 15000);
+                const waitMs = Math.max(backoff, resetMs > 0 ? (resetMs - Date.now() + 2000) : 0);
+                console.log(`${nombreCuenta} RateLimit /v3/messages (intento ${i}/${intentos}), esperando ${Math.ceil(waitMs / 1000)}s...`);
                 nextAllowedAt = Date.now() + waitMs;
                 continue;
             }
             if ([500, 502, 503, 504].includes(res.status) && i < intentos) {
-                await esperar(i * 2000);
+                await esperar(i * 3000);
                 continue;
             }
             const errTxt = await res.text().catch(() => '');
