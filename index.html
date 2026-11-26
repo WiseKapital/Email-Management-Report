@@ -585,12 +585,13 @@
 
     function distributeExactIntegerTotal(items, target, getW, set) {
       if (!items?.length) return;
-      if (items.length === 1) { set(items[0], Math.max(0, target || 0)); return; }
-      if (!target || target <= 0) { items.forEach(it => set(it, 0)); return; }
+      const intTarget = Math.max(0, Math.round(target || 0));
+      if (items.length === 1) { set(items[0], intTarget); return; }
+      if (intTarget <= 0) { items.forEach(it => set(it, 0)); return; }
       const w = items.map(it => Math.max(0, getW(it) || 0)), sW = w.reduce((a, b) => a + b, 0);
       const ew = sW > 0 ? w : items.map(() => 1), totW = ew.reduce((a, b) => a + b, 0);
-      const q = ew.map(v => (v / totW) * target), ints = q.map(Math.floor);
-      let rem = target - ints.reduce((a, b) => a + b, 0);
+      const q = ew.map(v => (v / totW) * intTarget), ints = q.map(Math.floor);
+      let rem = intTarget - ints.reduce((a, b) => a + b, 0);
       q.map((v, i) => ({ i, r: v - ints[i] })).sort((a, b) => b.r - a.r).slice(0, rem).forEach(x => ints[x.i]++);
       items.forEach((it, i) => set(it, ints[i]));
     }
@@ -676,9 +677,16 @@
         const sh = Math.min(1, Math.max(0, (rSh > 0 && sSh > 0) ? (rSh * 0.65 + sSh * 0.35) : (rSh || sSh)));
         if (sh > 0) agg.users = Math.max(agg.users, Math.min(monthRealUsers, Math.max(1, Math.round(monthRealUsers * sh))));
       }
+      agg.signups = Math.round(agg.signups);
+      agg.users = Math.round(agg.users);
 
       const advVals = Object.values(agg.advertisers), advSigSum = advVals.reduce((a, v) => a + (v.signups || 0), 0);
-      distributeByWeight(advVals, agg.signups - advSigSum, [v => v.signups, v => v.revenue], (v, val) => v.signups += val);
+      if (agg.signups > advSigSum) {
+        distributeByWeight(advVals, agg.signups - advSigSum, [v => v.signups, v => v.revenue], (v, val) => v.signups += val);
+      } else if (advSigSum > agg.signups && advVals.length) {
+        const pos = advVals.filter(v => (v.signups || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : advVals, agg.signups, v => v.signups, (v, val) => v.signups = val);
+      }
 
       const brandVals = Object.values(agg.brands);
       let brandSigSum = brandVals.reduce((a, b) => a + (b.signups || 0), 0);
@@ -702,10 +710,26 @@
           if (advB.length) { distributeByWeight(advB, need, [b => b.signups, b => b._origSig, b => b.revenue], (b, val) => b.signups += val); brandSigSum += need; }
         });
         distributeByWeight(brandVals, agg.signups - brandSigSum, [b => b.signups, b => b.revenue], (b, val) => b.signups += val);
+      } else if (brandSigSum > agg.signups && brandVals.length) {
+        const pos = brandVals.filter(b => (b.signups || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : brandVals, agg.signups, b => b.signups, (b, val) => b.signups = val);
       }
 
-      distributeByWeight(brandVals, agg.users - brandVals.reduce((a, b) => a + (b.users || 0), 0), [b => b.revenue, b => b.signups], (b, val) => b.users += val);
-      distributeByWeight(advVals, agg.users - advVals.reduce((a, v) => a + (v.users || 0), 0), [v => v.revenue, v => v.signups], (v, val) => v.users += val);
+      const brandUserSum = brandVals.reduce((a, b) => a + (b.users || 0), 0);
+      if (agg.users > brandUserSum) {
+        distributeByWeight(brandVals, agg.users - brandUserSum, [b => b.revenue, b => b.signups], (b, val) => b.users += val);
+      } else if (brandUserSum > agg.users && brandVals.length) {
+        const pos = brandVals.filter(b => (b.users || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : brandVals, agg.users, b => b.users, (b, val) => b.users = val);
+      }
+
+      const advUserSum = advVals.reduce((a, v) => a + (v.users || 0), 0);
+      if (agg.users > advUserSum) {
+        distributeByWeight(advVals, agg.users - advUserSum, [v => v.revenue, v => v.signups], (v, val) => v.users += val);
+      } else if (advUserSum > agg.users && advVals.length) {
+        const pos = advVals.filter(v => (v.users || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : advVals, agg.users, v => v.users, (v, val) => v.users = val);
+      }
 
       const rows = []; let gSig = 0, gFtd = 0;
       Object.entries(espIpMap).forEach(([espIp, g]) => {
@@ -803,6 +827,17 @@
       const allItems = Object.values(byEsp).flatMap(g => Object.values(g));
       syncBreakdownMissing(allItems, agg.advertisers, 'signups', 'signups', [it => it.signups, it => it.origSig], agg.signups - Object.values(normBrands).reduce((a, b) => a + b.signups, 0));
       syncBreakdownMissing(allItems, agg.advertisers, 'ftds', 'users', [it => it.origFtd, it => it.signups, it => it.origSig], agg.users - Object.values(normBrands).reduce((a, b) => a + b.users, 0));
+
+      const curSigSum = allItems.reduce((a, it) => a + (it.signups || 0), 0);
+      if (curSigSum > agg.signups && allItems.length) {
+        const pos = allItems.filter(it => (it.signups || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : allItems, agg.signups, it => it.signups, (it, v) => it.signups = v);
+      }
+      const curFtdSum = allItems.reduce((a, it) => a + (it.ftds || 0), 0);
+      if (curFtdSum > agg.users && allItems.length) {
+        const pos = allItems.filter(it => (it.ftds || 0) > 0);
+        distributeExactIntegerTotal(pos.length ? pos : allItems, agg.users, it => it.ftds, (it, v) => it.ftds = v);
+      }
 
       const knownEsps = Array.from(new Set([...sortOrder, ...Object.keys(byEsp)])).filter(e => !isExcludedEsp(e));
       const newRows = []; let grandSig = 0, grandFtd = 0;
