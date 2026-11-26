@@ -12,6 +12,10 @@ const MESES_CARPETA = [
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
 ];
+const MESES_CARPETA_CAP = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
 const MESES_CORTOS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function obtenerAyerColombia() {
@@ -55,6 +59,15 @@ function classifyISP(valor) {
     return 'Other';
 }
 
+function extraerDominioEmail(valor) {
+    if (!valor) return 'Unknown';
+    let text = String(valor).trim().toLowerCase();
+    const m = text.match(/<([^>]+)>/);
+    if (m) text = m[1].trim();
+    if (text.includes('@')) text = text.split('@').pop().trim();
+    return text || 'Unknown';
+}
+
 function nuevoMapaISPs() {
     const mapa = {};
     for (const isp of ISPS_MLJ) {
@@ -66,7 +79,7 @@ function nuevoMapaISPs() {
 const esperar = (ms) => new Promise(r => setTimeout(r, ms));
 
 // =======================================================
-// 1. MAILJET (secuencial + reintentos ante 504/429)
+// 1. MAILJET (ISP + Dominio/Subdominio remitente)
 // =======================================================
 async function fetchMailjetPage(url, headers, intentos = 3) {
     for (let i = 1; i <= intentos; i++) {
@@ -120,6 +133,19 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
         return Number.isNaN(t) || (t >= fromMs && t <= toMs);
     };
 
+    // 0) Mapa SenderID -> dominio/subdominio remitente
+    const senderMap = {};
+    try {
+        const senders = await fetchAllMailjet('https://api.mailjet.com/v3/REST/sender', headers);
+        for (const s of senders) {
+            if (s.ID != null && s.Email) {
+                senderMap[String(s.ID)] = extraerDominioEmail(s.Email);
+            }
+        }
+    } catch (e) {
+        console.warn(`${nombreCuenta} aviso senders (${e.message})`);
+    }
+
     // 1) Mensajes (fuente principal)
     const mensajes = await fetchAllMailjet(
         `https://api.mailjet.com/v3/REST/message?FromTS=${fromTS}&ToTS=${toTS}&ShowContactAlt=true&ShowSubject=true`,
@@ -150,6 +176,7 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
     }
 
     const porISP = nuevoMapaISPs();
+    const porDominio = {};
 
     for (const msg of mensajes) {
         if (msg.ArrivedAt && !enAyer(msg.ArrivedAt)) continue;
@@ -160,6 +187,7 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
         const idStr = String(msg.ID);
         const st = String(msg.Status || '').toLowerCase();
         const isp = classifyISP(msg.ContactAlt);
+        const domRemitente = (msg.SenderID != null && senderMap[String(msg.SenderID)]) || 'Unknown';
 
         const blocked = st === 'blocked';
         const soft = st.includes('soft') || (st === 'bounce' && !msg.StatePermanent);
@@ -178,13 +206,23 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
         if (clicked) r.Click += 1;
         if (spam) r.Complaint += 1;
         if (unsub || blocked) r.UnsubBlocked += 1;
+
+        if (!porDominio[domRemitente]) {
+            porDominio[domRemitente] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+        }
+        const dRow = porDominio[domRemitente];
+        if (delivered) dRow.Delivered += 1;
+        if (soft) dRow.SoftBounce += 1;
+        if (hard) dRow.HardBounce += 1;
+        if (opened) dRow.Open += 1;
+        if (clicked) dRow.Click += 1;
     }
 
-    return porISP;
+    return { porISP, porDominio };
 }
 
 // =======================================================
-// 2. SENDGRID (solo AYER: SoftBounce = blocks, HardBounce = bounces)
+// 2. SENDGRID - ESTADÍSTICAS POR ISP + GEO
 // =======================================================
 async function procesarSendgrid(apiKey, fechaStr) {
     const headers = { Authorization: `Bearer ${apiKey}` };
@@ -232,6 +270,172 @@ async function procesarSendgrid(apiKey, fechaStr) {
 }
 
 // =======================================================
+// 2B. SENDGRID - BREAKDOWN POR DOMINIO / SUBDOMINIO
+// =======================================================
+async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
+    const headers = { Authorization: `Bearer ${apiKey}` };
+    const [y, m, d] = fechaStr.split('-').map(Number);
+
+    // Ventana exacta de AYER en Colombia (00:00:00 a 23:59:59.999 COL)
+    const fromMs = Date.UTC(y, m - 1, d, 5, 0, 0, 0);
+    const toMs = Date.UTC(y, m - 1, d + 1, 4, 59, 59, 999);
+    const fromSec = Math.floor(fromMs / 1000);
+    const toSec = Math.floor(toMs / 1000);
+
+    // 1) Bounces y Blocks del día (sin límite estricto de 6 req/min)
+    async function fetchSuppresions(endpoint) {
+        const set = new Set();
+        let offset = 0;
+        const limit = 500;
+        while (true) {
+            try {
+                const res = await fetch(
+                    `https://api.sendgrid.com/v3/suppression/${endpoint}?start_time=${fromSec}&end_time=${toSec}&limit=${limit}&offset=${offset}`,
+                    { headers, signal: AbortSignal.timeout(20000) }
+                );
+                if (!res.ok) break;
+                const data = await res.json();
+                if (!Array.isArray(data) || !data.length) break;
+                for (const item of data) {
+                    if (item.email) set.add(String(item.email).trim().toLowerCase());
+                }
+                if (data.length < limit) break;
+                offset += limit;
+            } catch {
+                break;
+            }
+        }
+        return set;
+    }
+
+    const [bouncedEmails, invalidEmails, blockedEmails] = await Promise.all([
+        fetchSuppresions('bounces'),
+        fetchSuppresions('invalid_emails'),
+        fetchSuppresions('blocks')
+    ]);
+    for (const em of invalidEmails) bouncedEmails.add(em);
+
+    // 2) Email Activity API (/v3/messages) con manejo automático de rate-limit (6 req/min)
+    let nextAllowedAt = 0;
+
+    async function sgActivityFetch(url, intentos = 6) {
+        for (let i = 1; i <= intentos; i++) {
+            const esperaAntes = nextAllowedAt - Date.now();
+            if (esperaAntes > 0) await esperar(esperaAntes);
+
+            const res = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+            const rem = res.headers.get('x-ratelimit-remaining');
+            const reset = res.headers.get('x-ratelimit-reset');
+            if (reset) {
+                const resetMs = Number(reset) * 1000 + 1500;
+                if (rem !== null && Number(rem) <= 0) {
+                    nextAllowedAt = Math.max(nextAllowedAt, resetMs);
+                }
+            }
+
+            if (res.ok) return await res.json();
+
+            if (res.status === 429 && i < intentos) {
+                const waitMs = reset ? Math.max(3000, Number(reset) * 1000 - Date.now() + 1500) : 15000;
+                console.log(`${nombreCuenta} RateLimit /v3/messages, esperando ${Math.ceil(waitMs / 1000)}s...`);
+                nextAllowedAt = Date.now() + waitMs;
+                continue;
+            }
+            if ([500, 502, 503, 504].includes(res.status) && i < intentos) {
+                await esperar(i * 2000);
+                continue;
+            }
+            const errTxt = await res.text().catch(() => '');
+            throw new Error(`SendGrid /v3/messages HTTP ${res.status} ${errTxt}`);
+        }
+    }
+
+    const msgMap = new Map();
+
+    async function fetchWindow(startMs, endMs, extraFilter = '') {
+        const startIso = new Date(startMs).toISOString().slice(0, 19) + 'Z';
+        const endIso = new Date(endMs).toISOString().slice(0, 19) + 'Z';
+        const query = `last_event_time BETWEEN TIMESTAMP "${startIso}" AND TIMESTAMP "${endIso}"${extraFilter}`;
+        const url = `https://api.sendgrid.com/v3/messages?limit=1000&query=${encodeURIComponent(query)}`;
+
+        const json = await sgActivityFetch(url);
+        const msgs = Array.isArray(json.messages) ? json.messages : [];
+        for (const msg of msgs) {
+            if (msg.msg_id) msgMap.set(msg.msg_id, msg);
+        }
+
+        if (msgs.length >= 1000) {
+            const spanSec = Math.floor((endMs - startMs) / 1000);
+            if (spanSec > 10) {
+                const midSec = Math.floor((startMs + endMs) / 2000);
+                const midMs = midSec * 1000;
+                await fetchWindow(startMs, midMs, extraFilter);
+                await fetchWindow(midMs, endMs, extraFilter);
+            } else if (!extraFilter) {
+                await fetchWindow(startMs, endMs, ' AND status="delivered"');
+                await fetchWindow(startMs, endMs, ' AND status="not_delivered"');
+                await fetchWindow(startMs, endMs, ' AND status="processed"');
+            }
+        }
+    }
+
+    await fetchWindow(fromMs, toMs);
+    console.log(`${nombreCuenta} mensajes recuperados por actividad: ${msgMap.size}`);
+
+    const porDominio = {};
+    const unresolved = [];
+
+    const asegurarDom = (dom) => {
+        if (!porDominio[dom]) {
+            porDominio[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+        }
+        return porDominio[dom];
+    };
+
+    for (const msg of msgMap.values()) {
+        const dom = extraerDominioEmail(msg.from_email);
+        const dRow = asegurarDom(dom);
+        const st = String(msg.status || '').toLowerCase();
+
+        if (st === 'delivered') {
+            dRow.Delivered += 1;
+        } else if (st === 'not_delivered') {
+            const toEm = String(msg.to_email || '').trim().toLowerCase();
+            if (bouncedEmails.has(toEm)) {
+                dRow.HardBounce += 1;
+            } else if (blockedEmails.has(toEm)) {
+                dRow.SoftBounce += 1;
+            } else {
+                unresolved.push({ msgId: msg.msg_id, dom });
+            }
+        }
+
+        dRow.Open += Number(msg.opens_count || 0);
+        dRow.Click += Number(msg.clicks_count || 0);
+    }
+
+    // Resolver eventuales not_delivered que no aparecieron en suppression lists (máx 15 consultas)
+    for (let i = 0; i < unresolved.length; i++) {
+        const { msgId, dom } = unresolved[i];
+        const dRow = asegurarDom(dom);
+        if (i < 15 && msgId) {
+            try {
+                const detail = await sgActivityFetch(`https://api.sendgrid.com/v3/messages/${encodeURIComponent(msgId)}`);
+                const evs = Array.isArray(detail.events) ? detail.events.map(e => String(e.event_name || '').toLowerCase()) : [];
+                if (evs.includes('bounce') || evs.includes('dropped')) dRow.HardBounce += 1;
+                else dRow.SoftBounce += 1;
+                continue;
+            } catch {
+                // fallback abajo
+            }
+        }
+        dRow.SoftBounce += 1;
+    }
+
+    return porDominio;
+}
+
+// =======================================================
 // 3. CLOUDFLARE D1 (solo clics de AYER -> Estados USA)
 // =======================================================
 async function obtenerEstadosCloudflare(urlBase, fechaStr) {
@@ -263,7 +467,9 @@ async function obtenerEstadosCloudflare(urlBase, fechaStr) {
 }
 
 // =======================================================
-// 4. GUARDAR EN {año}/maildata/maildata_{mes}/{dia}.csv
+// 4. GUARDAR CSVs:
+//    A) {año}/maildata/maildata_{mes}/{dia}.csv
+//    B) {año}/ESP - IP Breakdown/{Mes}/{dia}.csv
 // =======================================================
 const pct = (n, d) => (d > 0 ? ((n / d) * 100).toFixed(2) + '%' : '0.00%');
 
@@ -296,6 +502,27 @@ function sumarBloque(porISP) {
     return tot;
 }
 
+function sumarBloqueDominios(porDominio) {
+    const tot = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+    for (const m of Object.values(porDominio || {})) {
+        for (const k of Object.keys(tot)) tot[k] += (m[k] || 0);
+    }
+    return tot;
+}
+
+function filaBreakdownCSV(nombre, m) {
+    const vol = (m.Delivered || 0) + (m.SoftBounce || 0) + (m.HardBounce || 0);
+    return [
+        nombre,
+        vol,
+        m.Delivered || 0,
+        m.SoftBounce || 0,
+        m.HardBounce || 0,
+        m.Open || 0,
+        m.Click || 0
+    ].map(csvCell).join(',');
+}
+
 async function main() {
     const { hoyCol, ayerCol } = obtenerAyerColombia();
     const fechaStr = (process.env.FECHA_MANUAL || '').trim() || ayerCol;
@@ -308,15 +535,15 @@ async function main() {
     const gd = await obtenerEstadosCloudflare(webhookUrl, fechaStr)
         .catch(e => { console.error('Cloudflare D1:', e.message); return {}; });
 
-    const mlj1 = (process.env.MJ_KEY_1 && process.env.MJ_SECRET_1)
-        ? await procesarMailjet('MLJ1', process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return nuevoMapaISPs(); })
-        : nuevoMapaISPs();
-    const mlj2 = (process.env.MJ_KEY_2 && process.env.MJ_SECRET_2)
-        ? await procesarMailjet('MLJ2', process.env.MJ_KEY_2, process.env.MJ_SECRET_2, fechaStr).catch(e => { console.error('MLJ2:', e.message); return nuevoMapaISPs(); })
-        : nuevoMapaISPs();
-    const mlj3 = (process.env.MJ_KEY_3 && process.env.MJ_SECRET_3)
-        ? await procesarMailjet('MLJ_SH', process.env.MJ_KEY_3, process.env.MJ_SECRET_3, fechaStr).catch(e => { console.error('MLJ_SH:', e.message); return nuevoMapaISPs(); })
-        : nuevoMapaISPs();
+    const mlj1Res = (process.env.MJ_KEY_1 && process.env.MJ_SECRET_1)
+        ? await procesarMailjet('MLJ1', process.env.MJ_KEY_1, process.env.MJ_SECRET_1, fechaStr).catch(e => { console.error('MLJ1:', e.message); return { porISP: nuevoMapaISPs(), porDominio: {} }; })
+        : { porISP: nuevoMapaISPs(), porDominio: {} };
+    const mlj2Res = (process.env.MJ_KEY_2 && process.env.MJ_SECRET_2)
+        ? await procesarMailjet('MLJ2', process.env.MJ_KEY_2, process.env.MJ_SECRET_2, fechaStr).catch(e => { console.error('MLJ2:', e.message); return { porISP: nuevoMapaISPs(), porDominio: {} }; })
+        : { porISP: nuevoMapaISPs(), porDominio: {} };
+    const mlj3Res = (process.env.MJ_KEY_3 && process.env.MJ_SECRET_3)
+        ? await procesarMailjet('MLJ_SH', process.env.MJ_KEY_3, process.env.MJ_SECRET_3, fechaStr).catch(e => { console.error('MLJ_SH:', e.message); return { porISP: nuevoMapaISPs(), porDominio: {} }; })
+        : { porISP: nuevoMapaISPs(), porDominio: {} };
 
     const seg1 = process.env.SG_KEY_1
         ? await procesarSendgrid(process.env.SG_KEY_1, fechaStr).catch(e => { console.error('SEG1:', e.message); return { porISP: nuevoMapaISPs(), estados: {} }; })
@@ -325,6 +552,7 @@ async function main() {
         ? await procesarSendgrid(process.env.SG_KEY_2, fechaStr).catch(e => { console.error('SEG2:', e.message); return { porISP: nuevoMapaISPs(), estados: {} }; })
         : { porISP: nuevoMapaISPs(), estados: {} };
 
+    // A) CSV diario por ISP (maildata)
     const lineas = [];
     lineas.push(',,,,,,,,,,,,,,,,');
     lineas.push(`,,,,,,,,,,,,,,,Date From:,${fechaCorta}`);
@@ -351,9 +579,9 @@ async function main() {
     }
 
     agregarBloque('MLJ (Mailjet)', [
-        { label: 'IP 1', porISP: mlj1, estados: gd.MLJ1 || {} },
-        { label: 'IP 2', porISP: mlj2, estados: gd.MLJ2 || {} },
-        { label: 'IP 3 / SH', porISP: mlj3, estados: gd.MLJ_SH || {} },
+        { label: 'IP 1', porISP: mlj1Res.porISP, estados: gd.MLJ1 || {} },
+        { label: 'IP 2', porISP: mlj2Res.porISP, estados: gd.MLJ2 || {} },
+        { label: 'IP 3 / SH', porISP: mlj3Res.porISP, estados: gd.MLJ_SH || {} },
     ], ISPS_MLJ);
 
     agregarBloque('SEG (Sendgrid)', [
@@ -369,6 +597,47 @@ async function main() {
 
     fs.writeFileSync(rutaArchivo, '\uFEFF' + lineas.join('\r\n'), 'utf8');
     console.log(`CSV de AYER guardado en: ${rutaArchivo}`);
+
+    // B) CSV diario por Dominio / Subdominio (ESP - IP Breakdown)
+    const [segDom1, segDom2] = await Promise.all([
+        process.env.SG_KEY_1
+            ? procesarSendgridDominios('SEG1', process.env.SG_KEY_1, fechaStr).catch(e => { console.error('SEG1 Dominios:', e.message); return {}; })
+            : Promise.resolve({}),
+        process.env.SG_KEY_2
+            ? procesarSendgridDominios('SEG2', process.env.SG_KEY_2, fechaStr).catch(e => { console.error('SEG2 Dominios:', e.message); return {}; })
+            : Promise.resolve({})
+    ]);
+
+    const lineasBd = [];
+    lineasBd.push('ESP/Domain,VOLUME,Delivered,Soft Bounce,Hard Bounce,Opened,Clicks');
+
+    const bloquesBreakdown = [
+        { nombre: 'MLJ (Mailjet) IP 1', dominios: mlj1Res.porDominio },
+        { nombre: 'MLJ (Mailjet) IP 2', dominios: mlj2Res.porDominio },
+        { nombre: 'MLJ (Mailjet) IP 3 / SH', dominios: mlj3Res.porDominio },
+        { nombre: 'SEG (Sendgrid) IP 1', dominios: segDom1 },
+        { nombre: 'SEG (Sendgrid) IP 2 / SH', dominios: segDom2 }
+    ];
+
+    for (const blk of bloquesBreakdown) {
+        const tot = sumarBloqueDominios(blk.dominios);
+        lineasBd.push(filaBreakdownCSV(blk.nombre, tot));
+        const domEntries = Object.entries(blk.dominios || {}).sort((a, b) => {
+            const va = (a[1].Delivered || 0) + (a[1].SoftBounce || 0) + (a[1].HardBounce || 0);
+            const vb = (b[1].Delivered || 0) + (b[1].SoftBounce || 0) + (b[1].HardBounce || 0);
+            return vb - va || a[0].localeCompare(b[0]);
+        });
+        for (const [dom, metrics] of domEntries) {
+            lineasBd.push(filaBreakdownCSV(dom, metrics));
+        }
+    }
+
+    const carpetaBreakdown = path.join(String(anioNum), 'ESP - IP Breakdown', MESES_CARPETA_CAP[mesNum - 1]);
+    fs.mkdirSync(carpetaBreakdown, { recursive: true });
+    const rutaBreakdown = path.join(carpetaBreakdown, `${diaNum}.csv`);
+
+    fs.writeFileSync(rutaBreakdown, '\uFEFF' + lineasBd.join('\r\n'), 'utf8');
+    console.log(`CSV Breakdown por dominio guardado en: ${rutaBreakdown}`);
 }
 
 main();
