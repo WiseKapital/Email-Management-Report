@@ -265,8 +265,9 @@
     const MONTH_KEYS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
     const MONTH_NAMES = MONTH_KEYS.map(m => m.toUpperCase());
     const MIN_ALLOWED_DATE = '2026-07-01', START_YEAR = 2026, PENDING_KEY = 'domains_pending_deploy_v1';
+    const COOLDOWN_MS = 300000, COOLDOWN_KEY = 'domains_save_cooldown_until_v1';
     let globalLoadedMonths = [], areDetailsExpanded = false, isEspIpExpanded = false, cachedDetailedBreakdownRows = [];
-    let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1;
+    let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1, saveCooldownTimer = null;
     const initialTableState = {}, tableSortDirections = {}, csvCache = {};
 
     const EXCEL_SHORT_CODE = {
@@ -320,7 +321,7 @@
     async function loadEspDomainsFromJson() {
       try {
         const p = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
-        if (p?.ts && (Date.now() - p.ts < 120000)) { const n = normalizeDomainsPayload(p.data); if (n) { espDomainsLoadedFromJson = true; return n; } }
+        if (p?.ts && (Date.now() - p.ts < COOLDOWN_MS)) { const n = normalizeDomainsPayload(p.data); if (n) { espDomainsLoadedFromJson = true; return n; } }
         else sessionStorage.removeItem(PENDING_KEY);
       } catch (e) {}
       const ts = Date.now();
@@ -795,6 +796,33 @@
       el.textContent = msg; el.classList.remove('hidden');
     }
 
+    function getSaveCooldownLeftMs() {
+      try {
+        const left = Number(localStorage.getItem(COOLDOWN_KEY) || 0) - Date.now();
+        if (left <= 0) { localStorage.removeItem(COOLDOWN_KEY); return 0; }
+        return left;
+      } catch (e) { return 0; }
+    }
+    function updateSaveBtnCooldownUI() {
+      const btn = $('saveDomainsGitBtn'); if (!btn) return;
+      const left = getSaveCooldownLeftMs();
+      if (left > 0) {
+        const s = Math.ceil(left / 1000), mm = String(Math.floor(s / 60)).padStart(2,'0'), ss = String(s % 60).padStart(2,'0');
+        btn.disabled = true; btn.textContent = `Save (${mm}:${ss})`;
+        btn.title = '5-minute cooldown active to prevent multiple GitHub deploys';
+        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/25 text-emerald-100 border border-white/20 cursor-not-allowed';
+      } else {
+        if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
+        btn.disabled = false; btn.textContent = 'Save'; btn.title = 'Save changes to GitHub';
+        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs cursor-pointer';
+      }
+    }
+    function startSaveCooldownTicker() {
+      if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
+      updateSaveBtnCooldownUI();
+      if (getSaveCooldownLeftMs() > 0) saveCooldownTimer = setInterval(updateSaveBtnCooldownUI, 1000);
+    }
+
     function getOrderedDomainEsps() {
       const m = domainsDraft || espSendingDomains, fl = (lastRenderedEspList || []).map(i => i.esp).filter(e => m[e] !== undefined);
       return [...fl, ...Object.keys(m).filter(e => !fl.includes(e))];
@@ -803,10 +831,11 @@
       activeDomainsModalEsp = esp || 'ALL'; domainsDraft = structuredClone(espSendingDomains); hasUnsavedDomainChanges = false;
       if ($('domainsModalSearch')) $('domainsModalSearch').value = '';
       showDomainsStatus(''); $('domainsModal').classList.remove('hidden'); document.body.classList.add('overflow-hidden');
-      renderDomainsModal();
+      renderDomainsModal(); startSaveCooldownTicker();
     }
     function closeDomainsModal() {
       if (hasUnsavedDomainChanges && !confirm('You have unsaved changes. Close without saving?')) return;
+      if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
       hasUnsavedDomainChanges = false; domainsDraft = null;
       $('domainsModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');
     }
@@ -840,8 +869,9 @@
     function utf8ToBase64(str) { let b = ''; new TextEncoder().encode(str).forEach(x => b += String.fromCharCode(x)); return btoa(b); }
 
     async function saveDomainsToGit() {
+      if (getSaveCooldownLeftMs() > 0) { startSaveCooldownTicker(); return; }
       const cfg = getGhRepoInfo(), tok = getBuiltInToken(), cleaned = buildCleanedDomains();
-      const btn = $('saveDomainsGitBtn'), prev = btn?.textContent || 'Save';
+      const btn = $('saveDomainsGitBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
       try {
         const url = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/Domains%20By%20ESP.json`;
@@ -851,11 +881,11 @@
         const p = await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ message: 'Update Domains By ESP.json from dashboard', content: utf8ToBase64(JSON.stringify(cleaned, null, 2) + '\n'), branch: cfg.branch, ...(sha ? { sha } : {}) }) });
         if (!p.ok) throw new Error((await p.json().catch(() => ({}))).message || `PUT ${p.status}`);
         espSendingDomains = cleaned; domainsDraft = structuredClone(cleaned); espDomainsLoadedFromJson = true; hasUnsavedDomainChanges = false;
-        try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ts: Date.now(), data: cleaned })); } catch (e) {}
+        try { localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_MS)); sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ts: Date.now(), data: cleaned })); } catch (e) {}
         if (lastRenderedEspAgg) renderEspTable(lastRenderedEspList, lastRenderedEspAgg);
-        renderDomainsModal(); showDomainsStatus('Saved to GitHub! Domains By ESP.json updated.', 'success');
+        renderDomainsModal(); showDomainsStatus('Saved to GitHub! Next save available in 5 minutes.', 'success');
       } catch (err) { showDomainsStatus(`Error saving: ${err.message}`, 'error'); }
-      finally { if (btn) { btn.disabled = false; btn.textContent = prev; } }
+      finally { startSaveCooldownTicker(); }
     }
 
     function copyEspDomains(btn) {
