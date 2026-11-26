@@ -245,7 +245,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-40 sm:w-48 px-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/25 text-white placeholder-emerald-100/70 focus:outline-none focus:bg-white/25">
-          <button id="saveDomainsGitBtn" type="button" onclick="saveDomainsToGit()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs cursor-pointer">Guardar</button>
+          <button id="saveDomainsGitBtn" type="button" onclick="saveDomainsToGit()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs cursor-pointer">Save</button>
           <button type="button" onclick="closeDomainsModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold cursor-pointer" title="Close (ESC)">✕</button>
         </div>
       </div>
@@ -806,7 +806,7 @@
       renderDomainsModal();
     }
     function closeDomainsModal() {
-      if (hasUnsavedDomainChanges && !confirm('Tienes cambios sin guardar. ¿Cerrar sin guardar?')) return;
+      if (hasUnsavedDomainChanges && !confirm('You have unsaved changes. Close without saving?')) return;
       hasUnsavedDomainChanges = false; domainsDraft = null;
       $('domainsModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');
     }
@@ -823,9 +823,9 @@
       const inp = document.querySelector(`input.add-domain-input[data-esp="${CSS.escape(esp)}"]`); if (!inp || !domainsDraft) return;
       const val = inp.value.trim(); if (!val) return;
       if (!domainsDraft[esp]) domainsDraft[esp] = [];
-      if (domainsDraft[esp].some(d => d.trim().toLowerCase() === val.toLowerCase())) { showDomainsStatus(`"${val}" ya existe en ${esp}.`, 'error'); return; }
+      if (domainsDraft[esp].some(d => d.trim().toLowerCase() === val.toLowerCase())) { showDomainsStatus(`"${val}" already exists in ${esp}.`, 'error'); return; }
       domainsDraft[esp].push(val); hasUnsavedDomainChanges = true;
-      showDomainsStatus(`Agregado "${val}". Pulsa "Guardar" para subir a Git.`, 'info'); renderDomainsModal();
+      showDomainsStatus(`Added "${val}". Click "Save" to update GitHub.`, 'info'); renderDomainsModal();
       document.querySelector(`input.add-domain-input[data-esp="${CSS.escape(esp)}"]`)?.focus();
     }
     function buildCleanedDomains() {
@@ -841,8 +841,8 @@
 
     async function saveDomainsToGit() {
       const cfg = getGhRepoInfo(), tok = getBuiltInToken(), cleaned = buildCleanedDomains();
-      const btn = $('saveDomainsGitBtn'), prev = btn?.textContent || 'Guardar';
-      if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+      const btn = $('saveDomainsGitBtn'), prev = btn?.textContent || 'Save';
+      if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
       try {
         const url = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/Domains%20By%20ESP.json`;
         const headers = { Authorization: `Bearer ${tok}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
@@ -853,8 +853,8 @@
         espSendingDomains = cleaned; domainsDraft = structuredClone(cleaned); espDomainsLoadedFromJson = true; hasUnsavedDomainChanges = false;
         try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ts: Date.now(), data: cleaned })); } catch (e) {}
         if (lastRenderedEspAgg) renderEspTable(lastRenderedEspList, lastRenderedEspAgg);
-        renderDomainsModal(); showDomainsStatus('¡Guardado en GitHub! Domains By ESP.json actualizado.', 'success');
-      } catch (err) { showDomainsStatus(`Error al guardar: ${err.message}`, 'error'); }
+        renderDomainsModal(); showDomainsStatus('Saved to GitHub! Domains By ESP.json updated.', 'success');
+      } catch (err) { showDomainsStatus(`Error saving: ${err.message}`, 'error'); }
       finally { if (btn) { btn.disabled = false; btn.textContent = prev; } }
     }
 
@@ -889,7 +889,7 @@
         if (q && !list.length && !isSingle) return;
         const rows = list.length ? list.map(x =>
           `<tr>
-            <td class="w-8 p-1 text-center"><button type="button" data-esp="${escAttr(esp)}" data-idx="${x.idx}" onclick="deleteDraftDomain(this)" class="w-6 h-6 rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 inline-flex items-center justify-center cursor-pointer" title="Eliminar">${TRASH_SVG}</button></td>
+            <td class="w-8 p-1 text-center"><button type="button" data-esp="${escAttr(esp)}" data-idx="${x.idx}" onclick="deleteDraftDomain(this)" class="w-6 h-6 rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 inline-flex items-center justify-center cursor-pointer" title="Delete">${TRASH_SVG}</button></td>
             <td class="w-9 py-1 px-1.5 text-center text-xs font-semibold text-slate-700">${x.num}</td>
             <td class="p-0.5"><input type="text" value="${escAttr(x.d)}" data-esp="${escAttr(esp)}" data-idx="${x.idx}" oninput="updateDraftDomain(this)" class="w-full px-2.5 py-1 text-xs font-medium text-slate-900 bg-transparent border border-transparent rounded hover:bg-[#f0fdf4] focus:bg-white focus:border-[#166534] focus:ring-1 focus:ring-[#166534] focus:outline-none"></td>
           </tr>`).join('')
@@ -897,7 +897,7 @@
         const foot = `<tfoot><tr class="bg-[#f0fdf4]">
           <td class="w-8 p-1 text-center text-xs font-bold text-[#166534]"></td>
           <td class="w-9 p-1 text-center text-xs font-bold text-[#166534]">+</td>
-          <td class="p-1"><div class="flex items-center gap-1"><input type="text" data-esp="${escAttr(esp)}" onkeydown="if(event.key==='Enter'){event.preventDefault();addDraftDomain(this.dataset.esp);}" placeholder="Add domain..." class="add-domain-input w-full px-2 py-1 text-xs bg-white border border-emerald-300 rounded focus:outline-none focus:border-[#166534]"><button type="button" data-esp="${escAttr(esp)}" onclick="addDraftDomain(this.dataset.esp)" class="w-6 h-6 shrink-0 rounded bg-[#166534] hover:bg-[#14532d] text-white font-bold text-xs cursor-pointer" title="Agregar">+</button></div></td>
+          <td class="p-1"><div class="flex items-center gap-1"><input type="text" data-esp="${escAttr(esp)}" onkeydown="if(event.key==='Enter'){event.preventDefault();addDraftDomain(this.dataset.esp);}" placeholder="Add domain..." class="add-domain-input w-full px-2 py-1 text-xs bg-white border border-emerald-300 rounded focus:outline-none focus:border-[#166534]"><button type="button" data-esp="${escAttr(esp)}" onclick="addDraftDomain(this.dataset.esp)" class="w-6 h-6 shrink-0 rounded bg-[#166534] hover:bg-[#14532d] text-white font-bold text-xs cursor-pointer" title="Add">+</button></div></td>
         </tr></tfoot>`;
         cards.push(`<div class="flex flex-col gap-1.5"><div class="flex items-center justify-between px-1"><span class="text-[11px] font-bold text-[#14532d] truncate">${escHtml(esp)}</span><button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-white hover:bg-[#dcfce7] text-[#14532d] border border-emerald-300 cursor-pointer">Copy</button></div><div class="overflow-hidden rounded-lg shadow-xs"><table class="domains-excel-table text-sm"><thead><tr class="dom-esp-title"><th colspan="3" class="py-2 px-3 text-center text-xs font-bold">${escHtml(EXCEL_SHORT_CODE[esp] || `ESP: ${esp}`)}</th></tr><tr class="dom-col-header"><th class="w-8"></th><th class="w-9 py-1.5 px-2 text-center text-xs font-bold">#</th><th class="py-1.5 px-3 text-center text-xs font-bold">Domain / Subdomain</th></tr></thead><tbody>${rows}</tbody>${foot}</table></div></div>`);
       });
