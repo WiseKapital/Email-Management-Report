@@ -184,7 +184,7 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
 }
 
 // =======================================================
-// 2. SENDGRID (solo AYER: SoftBounce = deferred, HardBounce = bounces)
+// 2. SENDGRID (solo AYER: SoftBounce = blocks, HardBounce = bounces)
 // =======================================================
 async function procesarSendgrid(apiKey, fechaStr) {
     const headers = { Authorization: `Bearer ${apiKey}` };
@@ -203,12 +203,12 @@ async function procesarSendgrid(apiKey, fechaStr) {
             const isp = classifyISP(s.name);
             const m = s.metrics || {};
             porISP[isp].Delivered += m.delivered || 0;
-            porISP[isp].SoftBounce += m.deferred || 0;
+            porISP[isp].SoftBounce += m.blocks || 0;
             porISP[isp].HardBounce += m.bounces || 0;
             porISP[isp].Open += m.opens || 0;
             porISP[isp].Click += m.clicks || 0;
             porISP[isp].Complaint += m.spam_reports || 0;
-            porISP[isp].UnsubBlocked += (m.blocks || 0) + (m.unsubscribes || 0);
+            porISP[isp].UnsubBlocked += m.unsubscribes || 0;
         }
     }
 
