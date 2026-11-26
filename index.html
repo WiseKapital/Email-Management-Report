@@ -42,8 +42,8 @@
           <p class="text-sm text-slate-500 mt-0.5">Email Deliverability by ESP (CSVs) & Advertiser Conversions (Multi-Month)</p>
         </div>
         <div class="relative flex items-center gap-3">
-          <div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-400 uppercase">FROM</span><button type="button" id="fromPillBtn" onclick="toggleCustomCalendar('from')" class="flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs hover:bg-slate-50 cursor-pointer"><span id="fromDisplay" class="text-xs font-bold text-slate-800 font-mono">--/--/----</span><span>📅</span></button></div>
-          <div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-400 uppercase">TO</span><button type="button" id="toPillBtn" onclick="toggleCustomCalendar('to')" class="flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer"><span id="toDisplay" class="text-xs font-bold text-slate-800 font-mono">--/--/----</span><span>📅</span></button></div>
+          <div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-400 uppercase">FROM</span><button type="button" id="fromPillBtn" onclick="toggleCustomCalendar('from')" class="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer"><span id="fromDisplay" class="text-xs font-bold text-slate-800 font-mono">--/--/----</span><svg class="w-4 h-4 opacity-75" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" stroke-linecap="round"/></svg></button></div>
+          <div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-400 uppercase">TO</span><button type="button" id="toPillBtn" onclick="toggleCustomCalendar('to')" class="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer"><span id="toDisplay" class="text-xs font-bold text-slate-800 font-mono">--/--/----</span><svg class="w-4 h-4 opacity-75" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" stroke-linecap="round"/></svg></button></div>
           <div id="customCalendarPopup" class="hidden absolute top-12 left-0 z-50 w-72 bg-white rounded-[22px] p-5 shadow-2xl border border-slate-100 select-none">
             <div class="flex items-center justify-between mb-4"><button type="button" onclick="navigateMonth(-1)" class="px-2 py-1 rounded-lg font-bold text-slate-600 hover:bg-slate-100">◀</button><span id="calHeaderTitle" class="text-xs font-extrabold text-[#0f172a] uppercase tracking-wider">-- ----</span><button type="button" id="calNextBtn" onclick="navigateMonth(1)" class="px-2 py-1 rounded-lg font-bold text-slate-600 hover:bg-slate-100">▶</button></div>
             <div class="grid grid-cols-7 gap-1 text-center mb-2 text-[11px] font-extrabold text-slate-800"><span>MO</span><span>TU</span><span>WE</span><span>TH</span><span>FR</span><span>SA</span><span>SU</span></div>
@@ -98,7 +98,7 @@
           <div class="flex items-center gap-2.5 flex-wrap">
             <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Email Performance by ESP</h3>
             <button id="toggleTableBtn" onclick="toggleTableDetails()" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#485c44] hover:bg-[#3b4c37] text-white shadow-sm cursor-pointer"><span id="btnIcon">▾</span><span id="btnText">Show All</span></button>
-            <button id="exportEspExcelBtn" onclick="exportEspTableToExcel()" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-[#166534] hover:bg-[#14532d] text-white shadow-sm cursor-pointer"><span>📥</span><span id="exportExcelBtnText">Export Excel</span></button>
+            <button id="exportEspExcelBtn" onclick="exportEspTableToExcel()" type="button" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-[#0d8a5e] hover:bg-[#0b744f] text-white shadow-sm cursor-pointer"><svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v6h6M8 13h3M13 13h3M8 17h3M13 17h3"/></svg><span id="exportExcelBtnText">Export Excel</span></button>
           </div>
           <span id="dateRangeSubtitle" class="text-xs text-slate-600 font-medium">Select period</span>
         </div>
@@ -204,8 +204,8 @@
       setT('calHeaderTitle', `${MONTH_NAMES[calViewMonth]} ${calViewYear}`);
     }
     function resetPillStyles(act = null) {
-      const b = 'flex items-center gap-2 bg-white border border-slate-300 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer';
-      const a = 'flex items-center gap-2 bg-white border border-[#99d5ca] ring-2 ring-[#e1f5f2] rounded-xl px-3 py-1.5 shadow-xs hover:bg-slate-50 cursor-pointer';
+      const b = 'flex items-center gap-2 bg-white border border-slate-300 text-slate-600 rounded-xl px-3 py-1.5 shadow-xs hover:border-slate-400 cursor-pointer';
+      const a = 'flex items-center gap-2 bg-white border-2 border-slate-900 text-slate-900 rounded-xl px-3 py-1.5 shadow-xs cursor-pointer';
       $('fromPillBtn').className = act === 'from' ? a : b; $('toPillBtn').className = act === 'to' ? a : b;
     }
     function toggleCustomCalendar(target) {
