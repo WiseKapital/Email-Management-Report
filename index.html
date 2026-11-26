@@ -193,27 +193,25 @@
     </div>
   </div>
 
-  <!-- DOMAINS MODAL -->
+  <!-- DOMAINS MODAL (READ-ONLY FROM ESP - IP Breakdown CSVs) -->
   <div id="domainsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-xs" onclick="if(event.target===this)closeDomainsModal()">
-    <div id="domainsModalCard" class="modal-pop w-full max-w-7xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div id="domainsModalCard" class="modal-pop w-full max-w-6xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="px-6 py-4 bg-gradient-to-r from-[#14532d] to-[#166534] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">Domains By ESP</h3>
-          <p id="domainsModalSubtitle" class="text-xs text-emerald-100/90">Click any domain to edit</p>
+          <p id="domainsModalSubtitle" class="text-xs text-emerald-100/90">Deliverability & engagement by sending domain / subdomain</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-40 sm:w-48 px-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/25 text-white placeholder-emerald-100/70 focus:outline-none focus:bg-white/25">
-          <button id="saveDomainsGitBtn" type="button" onclick="saveDomainsToGit()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs cursor-pointer">Save</button>
+          <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-44 sm:w-56 px-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/25 text-white placeholder-emerald-100/70 focus:outline-none focus:bg-white/25">
           <button type="button" onclick="closeDomainsModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold cursor-pointer" title="Close (ESC)">✕</button>
         </div>
       </div>
 
-      <div id="domainsStatusBanner" class="hidden px-6 py-2 text-xs font-semibold border-b shrink-0"></div>
       <div id="domainsModalTabs" class="px-6 py-2.5 bg-[#f0fdf4] border-b border-emerald-200 flex items-center gap-2 overflow-x-auto shrink-0"></div>
       <div id="domainsModalBody" class="flex-1 overflow-y-auto p-6 bg-slate-50/70"></div>
       <div class="px-6 py-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
-        <span id="domainsModalSource" class="font-medium">Source: Domains By ESP.json</span>
-        <span class="text-[11px] text-slate-400">Click text to edit &bull; ESC to close</span>
+        <span id="domainsModalSource" class="font-medium">Source: ESP - IP Breakdown CSVs</span>
+        <span class="text-[11px] text-slate-400">Read-only &bull; ESC to close</span>
       </div>
     </div>
   </div>
@@ -222,33 +220,25 @@
     const $ = id => document.getElementById(id), setT = (id, v) => { const el = $(id); if (el) el.textContent = v; };
     const MONTH_KEYS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
     const MONTH_NAMES = MONTH_KEYS.map(m => m.toUpperCase());
-    const MIN_ALLOWED_DATE = '2026-07-01', START_YEAR = 2026, PENDING_KEY = 'domains_pending_deploy_v1';
-    const COOLDOWN_MS = 300000, COOLDOWN_KEY = 'domains_save_cooldown_until_v1';
+    const MIN_ALLOWED_DATE = '2026-07-01', START_YEAR = 2026;
     let globalLoadedMonths = [], areDetailsExpanded = false, isEspIpExpanded = false, cachedDetailedBreakdownRows = [];
-    let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1, saveCooldownTimer = null;
-    const initialTableState = {}, tableSortDirections = {}, csvCache = {};
+    let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1, preferredBreakdownPathIdx = -1;
+    const initialTableState = {}, tableSortDirections = {}, csvCache = {}, breakdownCsvCache = {};
 
     const EXCEL_SHORT_CODE = {
       'SEG (Sendgrid) IP 1': 'ESP: SEG', 'SEG (Sendgrid) IP 2 / SH': 'ESP: SEGSH',
       'MLJ (Mailjet) IP 1': 'ESP: MLJ1', 'MLJ (Mailjet) IP 2': 'ESP: MLJ2', 'MLJ (Mailjet) IP 3 / SH': 'ESP: MLJSH'
     };
-    const DEFAULT_ESP_DOMAINS = {
-      'SEG (Sendgrid) IP 1': ['igamingnewz.com','newz4today.com','royalzclub.com','sweepzkings.com','wannnasee.com','ac.sweepzkings.com','ad.wannnasee.com','am.royalzclub.com'],
-      'SEG (Sendgrid) IP 2 / SH': ['igamingnewz.com','newz4today.com','prodayz.com','royalzclub.com','solonewz.com','sunnynewz.com','sweepzqueens.com','wannnasee.com','ad.igamingnewz.com','em.sweepzqueens.com','en.newz4today.com'],
-      'MLJ (Mailjet) IP 1': ['igamingnewz.com','imperialsweeps.com','newzmagazin.com','prodayz.com','raidersnewz.com','yahomagazine.com','ad.imperialsweeps.com','am.yahomagazine.com','de.raidersnewz.com'],
-      'MLJ (Mailjet) IP 2': ['igamingnewz.com','raidersnewz.com','solonewz.com','sunnynewz.com','sweepzkings.com','wannnasee.com','ac.sweepzkings.com','ad.igamingnewz.com','en.solonewz.com'],
-      'MLJ (Mailjet) IP 3 / SH': ['getsomenewz.com','imperialsweeps.com','sunnynewz.com','am.getsomenewz.com','mj.getsomenewz.com']
-    };
-    let espSendingDomains = structuredClone(DEFAULT_ESP_DOMAINS), espDomainsLoadedFromJson = false;
+    const BREAKDOWN_ESPS_ORDER = [
+      'MLJ (Mailjet) IP 1',
+      'MLJ (Mailjet) IP 2',
+      'MLJ (Mailjet) IP 3 / SH',
+      'SEG (Sendgrid) IP 1',
+      'SEG (Sendgrid) IP 2 / SH'
+    ];
+    let espDomainStats = {}, breakdownDaysFound = 0, breakdownDaysTotal = 0;
     let lastRenderedEspList = [], lastRenderedEspAgg = null, activeDomainsModalEsp = 'ALL';
-    let hasUnsavedDomainChanges = false, domainsDraft = null;
 
-    const TRASH_SVG = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
-    const getBuiltInToken = () => [3,2,5,0,4,1].map(i => ['0fnN4E2g','y1wX','9QxqDIY0','ghp_','w9IcdB0Y','seKgJmCx'][i]).join('');
-    const getGhRepoInfo = () => {
-      const h = location.hostname || '', p = location.pathname.split('/').filter(Boolean), pg = h.endsWith('.github.io');
-      return { owner: pg ? h.replace('.github.io','') : 'JonathanBaquero01', repo: pg ? (p[0] || 'Email_Report') : 'Email_Report', branch: 'main' };
-    };
     const escHtml = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const escAttr = s => escHtml(s).replace(/"/g,'&quot;');
     const isExcludedEsp = n => /CAM|CAMPAIGNER|SMPT|SMTP/i.test(n || '');
@@ -263,34 +253,6 @@
     const formatS2P = (s, u) => u > 0 ? (s === 0 ? '0:1' : `1:${Math.round(s/u)}`) : (s > 0 ? `0:${s}` : '0:0');
     const isoToDisplay = s => s ? `${s.slice(5,7)}/${s.slice(8,10)}/${s.slice(0,4)}` : '';
     const parseNum = v => parseFloat(String(v || 0).replace(/["', ]/g,'')) || 0;
-
-    function normalizeDomainsPayload(raw) {
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-      const out = {};
-      Object.entries(raw).forEach(([esp, list]) => {
-        if (!Array.isArray(list)) return;
-        const clean = [];
-        list.forEach(item => { const v = String(item || '').trim(); if (v && !clean.includes(v)) clean.push(v); });
-        out[esp] = clean;
-      });
-      return Object.keys(out).length ? out : null;
-    }
-
-    async function loadEspDomainsFromJson() {
-      try {
-        const p = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null');
-        if (p?.ts && (Date.now() - p.ts < COOLDOWN_MS)) { const n = normalizeDomainsPayload(p.data); if (n) { espDomainsLoadedFromJson = true; return n; } }
-        else sessionStorage.removeItem(PENDING_KEY);
-      } catch (e) {}
-      const ts = Date.now();
-      for (const p of ['Domains%20By%20ESP.json','./Domains%20By%20ESP.json','Domains By ESP.json','./Domains By ESP.json']) {
-        try {
-          const r = await fetch(`${p}?t=${ts}`, { cache: 'no-store' });
-          if (r.ok) { const n = normalizeDomainsPayload(await r.json()); if (n) { espDomainsLoadedFromJson = true; return n; } }
-        } catch (e) {}
-      }
-      return null;
-    }
 
     async function fetchMonthFile(mKey, year = getCurrentYear()) {
       const cap = mKey[0].toUpperCase() + mKey.slice(1), ts = Date.now();
@@ -439,6 +401,95 @@
         if (!merged[esp]) merged[esp] = { ...v, domains: {} }; else keys.forEach(k => merged[esp][k] += v[k]);
         Object.entries(v.domains).forEach(([dom, dv]) => { if (!merged[esp].domains[dom]) merged[esp].domains[dom] = { ...dv }; else keys.forEach(k => merged[esp].domains[dom][k] += dv[k]); });
       }));
+      return merged;
+    }
+
+    function parseBreakdownCsv(txt) {
+      if (!txt || typeof txt !== 'string') return null;
+      const map = {};
+      let curEsp = '';
+      for (const rawLine of txt.split(/\r?\n/)) {
+        const line = rawLine.replace(/^\uFEFF/, '').trim();
+        if (!line) continue;
+        const c = parseCsvLine(line);
+        if (!c.length || !c[0]) continue;
+        const label = c[0].trim();
+        if (/^esp\/domain$/i.test(label)) continue;
+        if (/^(MLJ|SEG)\s*\(/i.test(label) || BREAKDOWN_ESPS_ORDER.includes(label)) {
+          curEsp = label;
+          if (!isExcludedEsp(curEsp) && !map[curEsp]) map[curEsp] = {};
+          continue;
+        }
+        if (!curEsp || isExcludedEsp(curEsp)) continue;
+        const dom = label.toLowerCase();
+        if (!map[curEsp][dom]) {
+          map[curEsp][dom] = { domain: dom, volume: 0, delivered: 0, softBounce: 0, hardBounce: 0, opened: 0, clicks: 0 };
+        }
+        const entry = map[curEsp][dom];
+        entry.volume += parseNum(c[1]);
+        entry.delivered += parseNum(c[2]);
+        entry.softBounce += parseNum(c[3]);
+        entry.hardBounce += parseNum(c[4]);
+        entry.opened += parseNum(c[5]);
+        entry.clicks += parseNum(c[6]);
+      }
+      return Object.keys(map).length ? map : null;
+    }
+
+    async function fetchBreakdownCsvDay(m, d, y = getCurrentYear()) {
+      const k = `${y}/${m}/${d}`;
+      if (breakdownCsvCache[k]) return breakdownCsvCache[k];
+      const cap = m[0].toUpperCase() + m.slice(1), dn = String(+d), ts = Date.now();
+      const paths = [
+        `${y}/ESP%20-%20IP%20Breakdown/${cap}/${dn}.csv`,
+        `./${y}/ESP%20-%20IP%20Breakdown/${cap}/${dn}.csv`,
+        `${y}/ESP%20-%20IP%20Breakdown/${cap}/${d}.csv`,
+        `./${y}/ESP%20-%20IP%20Breakdown/${cap}/${d}.csv`,
+        `ESP%20-%20IP%20Breakdown/${cap}/${dn}.csv`,
+        `./ESP%20-%20IP%20Breakdown/${cap}/${dn}.csv`
+      ];
+      const ord = paths.map((_, i) => i);
+      if (preferredBreakdownPathIdx >= 0 && preferredBreakdownPathIdx < ord.length) {
+        ord.splice(ord.indexOf(preferredBreakdownPathIdx), 1);
+        ord.unshift(preferredBreakdownPathIdx);
+      }
+      for (const i of ord) {
+        try {
+          const r = await fetch(`${paths[i]}?t=${ts}`, { cache: 'no-store' });
+          if (r.ok) {
+            const txt = await r.text();
+            if (txt && !txt.trim().startsWith('<') && txt.includes(',')) {
+              const p = parseBreakdownCsv(txt);
+              if (p) { preferredBreakdownPathIdx = i; return (breakdownCsvCache[k] = p); }
+            }
+          }
+        } catch (e) {}
+      }
+      return null;
+    }
+
+    async function aggregateBreakdownCsvForRange(s, e) {
+      const [sy,sm,sd] = s.split('-').map(Number), [ey,em,ed] = e.split('-').map(Number);
+      const cur = new Date(sy, sm-1, sd, 12), end = new Date(ey, em-1, ed, 12), dates = [];
+      while (cur <= end) {
+        dates.push({ y: cur.getFullYear(), m: MONTH_KEYS[cur.getMonth()], d: String(cur.getDate()).padStart(2,'0') });
+        cur.setDate(cur.getDate() + 1);
+      }
+      const days = (await Promise.all(dates.map(x => fetchBreakdownCsvDay(x.m, x.d, x.y)))).filter(Boolean);
+      breakdownDaysFound = days.length;
+      breakdownDaysTotal = dates.length;
+      const merged = {};
+      BREAKDOWN_ESPS_ORDER.forEach(esp => { merged[esp] = {}; });
+      const metricKeys = ['volume','delivered','softBounce','hardBounce','opened','clicks'];
+      days.forEach(dayMap => {
+        Object.entries(dayMap).forEach(([esp, domMap]) => {
+          if (!merged[esp]) merged[esp] = {};
+          Object.entries(domMap).forEach(([dom, metrics]) => {
+            if (!merged[esp][dom]) merged[esp][dom] = { ...metrics };
+            else metricKeys.forEach(k => merged[esp][dom][k] += metrics[k]);
+          });
+        });
+      });
       return merged;
     }
 
@@ -612,8 +663,12 @@
     async function updateDashboardForDateRange() {
       $('dataStatusBadge')?.classList.add('hidden');
       const agg = aggregateJsonData(currentStartDate, currentEndDate);
-      const csvMap = await aggregateCsvForRange(currentStartDate, currentEndDate);
-      const sortOrder = ['MLJ (Mailjet) IP 1','MLJ (Mailjet) IP 2','MLJ (Mailjet) IP 3 / SH','SEG (Sendgrid) IP 1','SEG (Sendgrid) IP 2 / SH'];
+      const [csvMap, bdStats] = await Promise.all([
+        aggregateCsvForRange(currentStartDate, currentEndDate),
+        aggregateBreakdownCsvForRange(currentStartDate, currentEndDate)
+      ]);
+      espDomainStats = bdStats;
+      const sortOrder = BREAKDOWN_ESPS_ORDER;
 
       const byEsp = {}; sortOrder.forEach(e => { byEsp[e] = {}; });
       (agg.esp_ip_breakdown || []).forEach(r => {
@@ -736,159 +791,128 @@
       tb.innerHTML = html; setT('espIpGrandSignups', gSig.toLocaleString()); setT('espIpGrandFtds', gFtd.toLocaleString());
     }
 
-    function showDomainsStatus(msg, type = 'info') {
-      const el = $('domainsStatusBanner'); if (!el) return;
-      if (!msg) { el.classList.add('hidden'); return; }
-      const st = { success: 'bg-emerald-50 text-emerald-800 border-emerald-200', error: 'bg-rose-50 text-rose-800 border-rose-200', info: 'bg-amber-50 text-amber-800 border-amber-200' };
-      el.className = `px-6 py-2 text-xs font-semibold border-b shrink-0 ${st[type] || st.info}`;
-      el.textContent = msg; el.classList.remove('hidden');
-    }
-
-    function getSaveCooldownLeftMs() {
-      try {
-        const left = Number(localStorage.getItem(COOLDOWN_KEY) || 0) - Date.now();
-        if (left <= 0) { localStorage.removeItem(COOLDOWN_KEY); return 0; }
-        return left;
-      } catch (e) { return 0; }
-    }
-    function updateSaveBtnCooldownUI() {
-      const btn = $('saveDomainsGitBtn'); if (!btn) return;
-      const left = getSaveCooldownLeftMs();
-      if (left > 0) {
-        const s = Math.ceil(left / 1000), mm = String(Math.floor(s / 60)).padStart(2,'0'), ss = String(s % 60).padStart(2,'0');
-        btn.disabled = true; btn.textContent = `Save (${mm}:${ss})`;
-        btn.title = '5-minute cooldown active to prevent multiple GitHub deploys';
-        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/25 text-emerald-100 border border-white/20 cursor-not-allowed';
-      } else {
-        if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
-        btn.disabled = false; btn.textContent = 'Save'; btn.title = 'Save changes to GitHub';
-        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs cursor-pointer';
-      }
-    }
-    function startSaveCooldownTicker() {
-      if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
-      updateSaveBtnCooldownUI();
-      if (getSaveCooldownLeftMs() > 0) saveCooldownTimer = setInterval(updateSaveBtnCooldownUI, 1000);
-    }
-
     function getOrderedDomainEsps() {
-      const m = domainsDraft || espSendingDomains, fl = (lastRenderedEspList || []).map(i => i.esp).filter(e => m[e] !== undefined);
-      return [...fl, ...Object.keys(m).filter(e => !fl.includes(e))];
+      const fl = (lastRenderedEspList || []).map(i => i.esp).filter(e => espDomainStats[e] !== undefined);
+      return [...fl, ...Object.keys(espDomainStats).filter(e => !fl.includes(e))];
+    }
+    function getSortedEspDomains(esp) {
+      return Object.values(espDomainStats[esp] || {}).sort((a, b) => (b.volume - a.volume) || a.domain.localeCompare(b.domain));
     }
     function openDomainsModal(esp = 'ALL') {
-      activeDomainsModalEsp = esp || 'ALL'; domainsDraft = structuredClone(espSendingDomains); hasUnsavedDomainChanges = false;
+      activeDomainsModalEsp = esp || 'ALL';
       if ($('domainsModalSearch')) $('domainsModalSearch').value = '';
-      showDomainsStatus(''); $('domainsModal').classList.remove('hidden'); document.body.classList.add('overflow-hidden');
-      renderDomainsModal(); startSaveCooldownTicker();
+      $('domainsModal').classList.remove('hidden'); document.body.classList.add('overflow-hidden');
+      renderDomainsModal();
     }
     function closeDomainsModal() {
-      if (hasUnsavedDomainChanges && !confirm('You have unsaved changes. Close without saving?')) return;
-      if (saveCooldownTimer) { clearInterval(saveCooldownTimer); saveCooldownTimer = null; }
-      hasUnsavedDomainChanges = false; domainsDraft = null;
       $('domainsModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');
     }
     function setDomainsModalTab(esp) { activeDomainsModalEsp = esp || 'ALL'; renderDomainsModal(); }
-    function updateDraftDomain(inp) {
-      const e = inp?.dataset?.esp, i = +inp?.dataset?.idx;
-      if (domainsDraft?.[e]) { domainsDraft[e][i] = inp.value; hasUnsavedDomainChanges = true; }
-    }
-    function deleteDraftDomain(btn) {
-      const e = btn?.dataset?.esp, i = +btn?.dataset?.idx;
-      if (domainsDraft?.[e]) { domainsDraft[e].splice(i, 1); hasUnsavedDomainChanges = true; renderDomainsModal(); }
-    }
-    function addDraftDomain(esp) {
-      const inp = document.querySelector(`input.add-domain-input[data-esp="${CSS.escape(esp)}"]`); if (!inp || !domainsDraft) return;
-      const val = inp.value.trim(); if (!val) return;
-      if (!domainsDraft[esp]) domainsDraft[esp] = [];
-      if (domainsDraft[esp].some(d => d.trim().toLowerCase() === val.toLowerCase())) { showDomainsStatus(`"${val}" already exists in ${esp}.`, 'error'); return; }
-      domainsDraft[esp].push(val); hasUnsavedDomainChanges = true;
-      showDomainsStatus(`Added "${val}". Click "Save" to update GitHub.`, 'info'); renderDomainsModal();
-      document.querySelector(`input.add-domain-input[data-esp="${CSS.escape(esp)}"]`)?.focus();
-    }
-    function buildCleanedDomains() {
-      const src = domainsDraft || espSendingDomains, out = {};
-      Object.entries(src).forEach(([esp, list]) => {
-        const seen = new Set(), arr = [];
-        (list || []).forEach(r => { const v = String(r || '').trim(), lw = v.toLowerCase(); if (v && !seen.has(lw)) { seen.add(lw); arr.push(v); } });
-        out[esp] = arr;
-      });
-      return out;
-    }
-    function utf8ToBase64(str) { let b = ''; new TextEncoder().encode(str).forEach(x => b += String.fromCharCode(x)); return btoa(b); }
-
-    async function saveDomainsToGit() {
-      if (getSaveCooldownLeftMs() > 0) { startSaveCooldownTicker(); return; }
-      const cfg = getGhRepoInfo(), tok = getBuiltInToken(), cleaned = buildCleanedDomains();
-      const btn = $('saveDomainsGitBtn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-      try {
-        const url = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/Domains%20By%20ESP.json`;
-        const headers = { Authorization: `Bearer ${tok}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' };
-        let sha; const g = await fetch(`${url}?ref=${encodeURIComponent(cfg.branch)}`, { headers, cache: 'no-store' });
-        if (g.ok) sha = (await g.json()).sha; else if (g.status !== 404) throw new Error((await g.json().catch(() => ({}))).message || `GET ${g.status}`);
-        const p = await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ message: 'Update Domains By ESP.json from dashboard', content: utf8ToBase64(JSON.stringify(cleaned, null, 2) + '\n'), branch: cfg.branch, ...(sha ? { sha } : {}) }) });
-        if (!p.ok) throw new Error((await p.json().catch(() => ({}))).message || `PUT ${p.status}`);
-        espSendingDomains = cleaned; domainsDraft = structuredClone(cleaned); espDomainsLoadedFromJson = true; hasUnsavedDomainChanges = false;
-        try { localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_MS)); sessionStorage.setItem(PENDING_KEY, JSON.stringify({ ts: Date.now(), data: cleaned })); } catch (e) {}
-        if (lastRenderedEspAgg) renderEspTable(lastRenderedEspList, lastRenderedEspAgg);
-        renderDomainsModal(); showDomainsStatus('Saved to GitHub! Next save available in 5 minutes.', 'success');
-      } catch (err) { showDomainsStatus(`Error saving: ${err.message}`, 'error'); }
-      finally { startSaveCooldownTicker(); }
-    }
 
     function copyEspDomains(btn) {
-      const doms = ((domainsDraft || espSendingDomains)[btn?.dataset?.copyEsp] || []).map(d => String(d||'').trim()).filter(Boolean);
+      const doms = getSortedEspDomains(btn?.dataset?.copyEsp).map(d => d.domain);
       if (!doms.length) return;
+      const txt = doms.join('\n');
       const done = () => { const p = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = p, 1200); };
-      navigator.clipboard?.writeText ? navigator.clipboard.writeText(doms.join('\n')).then(done).catch(() => {}) : done();
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txt).then(done).catch(() => {});
+      } else {
+        const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { if (document.execCommand('copy')) done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
     }
 
     function renderDomainsModal() {
-      const map = domainsDraft || espSendingDomains, esps = getOrderedDomainEsps(), uniq = new Set();
-      const total = esps.reduce((a, e) => a + (map[e]?.length || 0), 0);
-      esps.forEach(e => (map[e] || []).forEach(d => { const t = String(d||'').trim().toLowerCase(); if (t) uniq.add(t); }));
-      $('domainsModalCard').className = `modal-pop w-full ${activeDomainsModalEsp === 'ALL' ? 'max-w-7xl' : 'max-w-2xl'} max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden`;
+      const esps = getOrderedDomainEsps(), uniq = new Set();
+      const total = esps.reduce((a, e) => a + Object.keys(espDomainStats[e] || {}).length, 0);
+      esps.forEach(e => Object.keys(espDomainStats[e] || {}).forEach(d => uniq.add(d.toLowerCase())));
+      $('domainsModalCard').className = `modal-pop w-full ${activeDomainsModalEsp === 'ALL' ? 'max-w-6xl' : 'max-w-4xl'} max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden`;
       setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'Domains By ESP' : activeDomainsModalEsp);
-      setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL' ? `${esps.length} ESPs • ${total} total (${uniq.size} unique)` : `${EXCEL_SHORT_CODE[activeDomainsModalEsp] || activeDomainsModalEsp} • ${(map[activeDomainsModalEsp] || []).length} domains`);
-      setT('domainsModalSource', espDomainsLoadedFromJson ? 'Source: Domains By ESP.json (live)' : 'Source: Domains By ESP.json');
+      const selCount = Object.keys(espDomainStats[activeDomainsModalEsp] || {}).length;
+      setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL'
+        ? `${esps.length} ESPs • ${total} total (${uniq.size} unique) • ${currentStartDate} to ${currentEndDate}`
+        : `${EXCEL_SHORT_CODE[activeDomainsModalEsp] || activeDomainsModalEsp} • ${selCount} domains • ${currentStartDate} to ${currentEndDate}`);
+      setT('domainsModalSource', `Source: ESP - IP Breakdown CSVs (${breakdownDaysFound} of ${breakdownDaysTotal} days)`);
       const tc = a => a ? 'px-3 py-1 rounded-xl text-xs font-bold bg-[#166534] text-white whitespace-nowrap cursor-pointer' : 'px-3 py-1 rounded-xl text-xs font-semibold bg-white text-[#14532d] hover:bg-[#dcfce7] border border-emerald-200 whitespace-nowrap cursor-pointer';
       $('domainsModalTabs').innerHTML = `<button type="button" onclick="setDomainsModalTab('ALL')" class="${tc(activeDomainsModalEsp==='ALL')}">All ESPs (${total})</button>` +
-        esps.map(e => `<button type="button" data-esp="${escAttr(e)}" onclick="setDomainsModalTab(this.dataset.esp)" class="${tc(activeDomainsModalEsp===e)}">${escHtml((EXCEL_SHORT_CODE[e]||e).replace(/^ESP:\s*/i,''))} (${(map[e]||[]).length})</button>`).join('');
+        esps.map(e => `<button type="button" data-esp="${escAttr(e)}" onclick="setDomainsModalTab(this.dataset.esp)" class="${tc(activeDomainsModalEsp===e)}">${escHtml((EXCEL_SHORT_CODE[e]||e).replace(/^ESP:\s*/i,''))} (${Object.keys(espDomainStats[e]||{}).length})</button>`).join('');
       renderDomainsModalBody();
     }
 
     function renderDomainsModalBody() {
       const body = $('domainsModalBody'); if (!body) return;
-      const map = domainsDraft || espSendingDomains, q = ($('domainsModalSearch')?.value || '').trim().toLowerCase();
+      const q = ($('domainsModalSearch')?.value || '').trim().toLowerCase();
       const isSingle = activeDomainsModalEsp !== 'ALL', esps = isSingle ? [activeDomainsModalEsp] : getOrderedDomainEsps();
       const cards = [];
       esps.forEach(esp => {
-        const list = (map[esp] || []).map((d, idx) => ({ d, idx, num: idx + 1 })).filter(x => !q || String(x.d||'').toLowerCase().includes(q));
+        const allList = getSortedEspDomains(esp);
+        const list = allList.map((d, idx) => ({ ...d, num: idx + 1 })).filter(x => !q || x.domain.toLowerCase().includes(q));
         if (q && !list.length && !isSingle) return;
+        const tot = list.reduce((a, x) => ({
+          volume: a.volume + x.volume, delivered: a.delivered + x.delivered,
+          softBounce: a.softBounce + x.softBounce, hardBounce: a.hardBounce + x.hardBounce,
+          opened: a.opened + x.opened, clicks: a.clicks + x.clicks
+        }), { volume: 0, delivered: 0, softBounce: 0, hardBounce: 0, opened: 0, clicks: 0 });
         const rows = list.length ? list.map(x =>
           `<tr>
-            <td class="w-8 p-1 text-center"><button type="button" data-esp="${escAttr(esp)}" data-idx="${x.idx}" onclick="deleteDraftDomain(this)" class="w-6 h-6 rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 inline-flex items-center justify-center cursor-pointer" title="Delete">${TRASH_SVG}</button></td>
-            <td class="w-9 py-1 px-1.5 text-center text-xs font-semibold text-slate-700">${x.num}</td>
-            <td class="p-0.5"><input type="text" value="${escAttr(x.d)}" data-esp="${escAttr(esp)}" data-idx="${x.idx}" oninput="updateDraftDomain(this)" class="w-full px-2.5 py-1 text-xs font-medium text-slate-900 bg-transparent border border-transparent rounded hover:bg-[#f0fdf4] focus:bg-white focus:border-[#166534] focus:ring-1 focus:ring-[#166534] focus:outline-none"></td>
+            <td class="w-10 py-1.5 px-2 text-center text-xs font-semibold text-slate-700">${x.num}</td>
+            <td class="py-1.5 px-3 text-left text-xs font-semibold text-slate-900">${escHtml(x.domain)}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono font-bold text-slate-800">${x.volume.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono text-slate-700">${x.delivered.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono text-amber-700">${x.softBounce.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono text-rose-700">${x.hardBounce.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono text-emerald-700">${x.opened.toLocaleString()}</td>
+            <td class="py-1.5 px-3 text-right text-xs font-mono text-sky-700">${x.clicks.toLocaleString()}</td>
           </tr>`).join('')
-          : `<tr><td colspan="3" class="py-5 text-center text-xs text-slate-400 italic">No domains</td></tr>`;
-        const foot = `<tfoot><tr class="bg-[#f0fdf4]">
-          <td class="w-8 p-1 text-center text-xs font-bold text-[#166534]"></td>
-          <td class="w-9 p-1 text-center text-xs font-bold text-[#166534]">+</td>
-          <td class="p-1"><div class="flex items-center gap-1"><input type="text" data-esp="${escAttr(esp)}" onkeydown="if(event.key==='Enter'){event.preventDefault();addDraftDomain(this.dataset.esp);}" placeholder="Add domain..." class="add-domain-input w-full px-2 py-1 text-xs bg-white border border-emerald-300 rounded focus:outline-none focus:border-[#166534]"><button type="button" data-esp="${escAttr(esp)}" onclick="addDraftDomain(this.dataset.esp)" class="w-6 h-6 shrink-0 rounded bg-[#166534] hover:bg-[#14532d] text-white font-bold text-xs cursor-pointer" title="Add">+</button></div></td>
-        </tr></tfoot>`;
-        cards.push(`<div class="flex flex-col gap-1.5"><div class="flex items-center justify-between px-1"><span class="text-[11px] font-bold text-[#14532d] truncate">${escHtml(esp)}</span><button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-white hover:bg-[#dcfce7] text-[#14532d] border border-emerald-300 cursor-pointer">Copy</button></div><div class="overflow-hidden rounded-lg shadow-xs"><table class="domains-excel-table text-sm"><thead><tr class="dom-esp-title"><th colspan="3" class="py-2 px-3 text-center text-xs font-bold">${escHtml(EXCEL_SHORT_CODE[esp] || `ESP: ${esp}`)}</th></tr><tr class="dom-col-header"><th class="w-8"></th><th class="w-9 py-1.5 px-2 text-center text-xs font-bold">#</th><th class="py-1.5 px-3 text-center text-xs font-bold">Domain / Subdomain</th></tr></thead><tbody>${rows}</tbody>${foot}</table></div></div>`);
+          : `<tr><td colspan="8" class="py-5 text-center text-xs text-slate-400 italic">No domain data for this period</td></tr>`;
+        const foot = list.length ? `<tfoot><tr class="bg-[#f0fdf4] font-bold text-[#14532d] text-xs">
+          <td class="py-2 px-2 text-center">-</td>
+          <td class="py-2 px-3 text-left uppercase">Total (${list.length})</td>
+          <td class="py-2 px-3 text-right font-mono">${tot.volume.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right font-mono">${tot.delivered.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right font-mono text-amber-700">${tot.softBounce.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right font-mono text-rose-700">${tot.hardBounce.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right font-mono text-emerald-700">${tot.opened.toLocaleString()}</td>
+          <td class="py-2 px-3 text-right font-mono text-sky-700">${tot.clicks.toLocaleString()}</td>
+        </tr></tfoot>` : '';
+        cards.push(`<div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs font-bold text-[#14532d] truncate">${escHtml(esp)}</span>
+            <button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-white hover:bg-[#dcfce7] text-[#14532d] border border-emerald-300 cursor-pointer">Copy</button>
+          </div>
+          <div class="overflow-x-auto rounded-lg shadow-xs">
+            <table class="domains-excel-table text-sm">
+              <thead>
+                <tr class="dom-esp-title"><th colspan="8" class="py-2 px-3 text-center text-xs font-bold">${escHtml(EXCEL_SHORT_CODE[esp] || `ESP: ${esp}`)}</th></tr>
+                <tr class="dom-col-header">
+                  <th class="w-10 py-1.5 px-2 text-center text-xs font-bold">#</th>
+                  <th class="py-1.5 px-3 text-left text-xs font-bold">Domain / Subdomain</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">VOLUME</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">Delivered</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">Soft Bounce</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">Hard Bounce</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">Opened</th>
+                  <th class="py-1.5 px-3 text-right text-xs font-bold">Clicks</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+              ${foot}
+            </table>
+          </div>
+        </div>`);
       });
-      body.innerHTML = cards.length ? (isSingle ? `<div class="max-w-md mx-auto">${cards.join('')}</div>` : `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">${cards.join('')}</div>`) : `<div class="py-12 text-center text-slate-400 text-sm">No matches found.</div>`;
+      body.innerHTML = cards.length ? `<div class="space-y-5">${cards.join('')}</div>` : `<div class="py-12 text-center text-slate-400 text-sm">No matches found.</div>`;
     }
 
     function renderEspTable(list, agg) {
       lastRenderedEspList = list || []; lastRenderedEspAgg = agg;
       let html = '', slots = 0; const uniq = new Set();
       list.forEach(i => {
-        const v = i.delivered + (i.softBounce || 0) + (i.hardBounce || 0), doms = espSendingDomains[i.esp] || [];
+        const v = i.delivered + (i.softBounce || 0) + (i.hardBounce || 0), doms = Object.keys(espDomainStats[i.esp] || {});
         slots += doms.length; doms.forEach(d => uniq.add(d.toLowerCase()));
-        const dCell = `<div class="inline-flex items-center justify-end gap-2"><span class="font-bold text-slate-800">${doms.length}</span><button type="button" data-esp="${escAttr(i.esp)}" onclick="openDomainsModal(this.dataset.esp)" title="View/edit domains" class="w-5 h-5 rounded-full bg-[#dcfce7] hover:bg-[#166534] text-[#14532d] hover:text-white border border-[#86efac] inline-flex items-center justify-center font-bold text-xs cursor-pointer">+</button></div>`;
+        const dCell = `<div class="inline-flex items-center justify-end gap-2"><span class="font-bold text-slate-800">${doms.length}</span><button type="button" data-esp="${escAttr(i.esp)}" onclick="openDomainsModal(this.dataset.esp)" title="View domains & metrics" class="w-5 h-5 rounded-full bg-[#dcfce7] hover:bg-[#166534] text-[#14532d] hover:text-white border border-[#86efac] inline-flex items-center justify-center font-bold text-xs cursor-pointer">+</button></div>`;
         html += `<tr class="esp-summary-row"><td class="py-3 px-4 text-left font-bold">${escHtml(i.esp)}</td><td class="py-3 px-4 font-mono">${dCell}</td><td class="py-3 px-4 font-mono">${v.toLocaleString()}</td><td class="py-3 px-4 font-mono">${i.delivered.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-700">${(i.softBounce||0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-rose-700">${(i.hardBounce||0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-emerald-700">${i.opened.toLocaleString()}</td><td class="py-3 px-4 font-mono text-sky-700">${i.clicked.toLocaleString()}</td><td class="py-3 px-4 font-mono text-amber-600">${(i.signups||0).toLocaleString()}</td><td class="py-3 px-4 font-mono text-indigo-600">${(i.players||0).toLocaleString()}</td></tr>`;
         Object.entries(i.domains || {}).forEach(([dom, d]) => {
           html += `<tr class="domain-row text-xs text-slate-600 ${areDetailsExpanded?'':'hidden'}"><td class="py-1.5 px-4 text-left pl-8">${escHtml(dom)}</td><td class="text-slate-400 font-mono text-center">-</td><td class="font-mono">${(d.delivered+d.softBounce+d.hardBounce).toLocaleString()}</td><td>${d.delivered.toLocaleString()}</td><td class="text-amber-700">${d.softBounce.toLocaleString()}</td><td class="text-rose-700">${d.hardBounce.toLocaleString()}</td><td class="text-emerald-700">${d.opened.toLocaleString()}</td><td class="text-sky-700">${d.clicked.toLocaleString()}</td><td class="text-slate-400 font-mono text-center">-</td><td class="text-slate-400 font-mono text-center">-</td></tr>`;
@@ -896,7 +920,7 @@
       });
       $('espTableBody').innerHTML = html;
       const totVol = (agg.delivered || 0) + (agg.softBounce || 0) + (agg.hardBounce || 0);
-      const footDom = `<div class="inline-flex items-center justify-end gap-2"><span class="font-bold text-slate-900">${slots}</span><span class="text-[11px] font-medium text-slate-400">(${uniq.size} uniq.)</span><button type="button" onclick="openDomainsModal('ALL')" title="View/edit all domains" class="w-5 h-5 rounded-full bg-[#166534] hover:bg-[#14532d] text-white inline-flex items-center justify-center font-bold text-xs cursor-pointer">+</button></div>`;
+      const footDom = `<div class="inline-flex items-center justify-end gap-2"><span class="font-bold text-slate-900">${slots}</span><span class="text-[11px] font-medium text-slate-400">(${uniq.size} uniq.)</span><button type="button" onclick="openDomainsModal('ALL')" title="View all domains & metrics" class="w-5 h-5 rounded-full bg-[#166534] hover:bg-[#14532d] text-white inline-flex items-center justify-center font-bold text-xs cursor-pointer">+</button></div>`;
       $('espTableFoot').innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${footDom}</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers||0).toLocaleString()}</td></tr>`;
     }
 
@@ -970,9 +994,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       initCharts();
-      const [months, domainsMap] = await Promise.all([loadAllMonths(), loadEspDomainsFromJson()]);
-      globalLoadedMonths = months;
-      if (domainsMap) espSendingDomains = domainsMap;
+      globalLoadedMonths = await loadAllMonths();
       initDateControls();
       await updateDashboardForDateRange();
     });
