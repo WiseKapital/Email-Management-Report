@@ -176,23 +176,6 @@
       <div class="flex items-center gap-2 border-b border-slate-200 pb-2"><span class="px-2.5 py-0.5 rounded bg-slate-900 text-white text-xs font-bold uppercase">Section 2</span><h2 class="text-lg font-bold text-slate-800">Advertiser Performance & Revenue</h2></div>
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <div><h3 class="text-sm font-bold text-slate-800 uppercase">Advertiser Breakdown Table</h3><p class="text-xs text-slate-500">Metrics: Conversion S2P Ratio (1:X) & Revenue</p></div>
-          <button onclick="resetTable('advertiserTable')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear / Reset Table</button>
-        </div>
-        <div class="overflow-x-auto">
-          <table id="advertiserTable" class="w-full text-sm text-right excel-table">
-            <thead>
-              <tr class="sort-row"><th class="w-1/4"></th><th><button onclick="sortTable('advertiserTable',1,this,'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable',2,this,'num')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable',3,this,'currency')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th><th><button onclick="sortTable('advertiserTable',4,this,'ratio')" class="sort-btn px-2 py-1 border rounded text-[11px]">Sort <span class="sort-icon">⇅</span></button></th></tr>
-              <tr class="theme-header-aff text-white text-xs uppercase font-semibold"><th class="py-2.5 px-4 text-left">Advertiser</th><th class="py-2.5 px-4">Sign Ups</th><th class="py-2.5 px-4">Users</th><th class="py-2.5 px-4">Revenue</th><th class="py-2.5 px-4">S2P (Ratio)</th></tr>
-            </thead>
-            <tbody id="advertiserTableBody"></tbody>
-            <tfoot class="border-t-2 border-slate-900 bg-slate-50 font-bold"><tr><td class="py-2.5 px-4 text-left">Grand total</td><td id="advGrandSignups" class="font-mono text-amber-600">0</td><td id="advGrandUsers" class="font-mono text-indigo-600">0</td><td id="advGrandRevenue" class="font-mono text-emerald-600">$0</td><td id="advGrandS2p" class="font-mono text-emerald-600">0:0</td></tr></tfoot>
-          </table>
-        </div>
-      </section>
-
-      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div><h3 class="text-sm font-bold text-slate-800 uppercase">Brand Breakdown Table</h3><p class="text-xs text-slate-500">Performance by Brand & Conversion S2P Ratio</p></div>
           <button onclick="resetTable('brandTable')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer">Clear / Reset Table</button>
         </div>
@@ -733,7 +716,7 @@
       setT('cardKpiProfitSub', `KPI: $${(agg.kpi.profit/1000).toFixed(1)}k`); setCardRr('cardRrProfitSub', `RR: $${(rrP/1000).toFixed(1)}k`, rrP, agg.kpi.profit);
 
       setT('dateRangeNotice', `${s} – ${e}`);
-      renderEspTable(agg.esp, agg); renderEspIpBreakdown(agg.esp_ip_breakdown); renderAdvAndBrand(agg); updateCharts(agg);
+      renderEspTable(agg.esp, agg); renderEspIpBreakdown(agg.esp_ip_breakdown); renderBrandTable(agg); updateCharts(agg);
     }
 
     function renderEspIpBreakdown(rows) {
@@ -917,17 +900,14 @@
       $('espTableFoot').innerHTML = `<tr class="font-bold text-slate-900 text-sm"><td class="py-3.5 px-4 text-left">Grand total</td><td class="py-3.5 px-4 font-mono">${footDom}</td><td class="py-3.5 px-4 font-mono">${totVol.toLocaleString()}</td><td class="py-3.5 px-4 font-mono">${(agg.delivered||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-700">${(agg.softBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-rose-700">${(agg.hardBounce||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-emerald-700">${(agg.opened||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-sky-700">${(agg.clicked||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-amber-600">${(agg.espSignups||0).toLocaleString()}</td><td class="py-3.5 px-4 font-mono text-indigo-600">${(agg.espPlayers||0).toLocaleString()}</td></tr>`;
     }
 
-    function renderAdvAndBrand(agg) {
-      let aHtml = '', bHtml = '';
-      Object.entries(agg.advertisers).sort((a,b) => b[1].revenue - a[1].revenue).forEach(([n, d]) => {
-        aHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2.5 px-4 text-left font-medium">${n}</td><td class="py-2.5 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2.5 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
-      });
+    function renderBrandTable(agg) {
+      let bHtml = '';
       Object.entries(agg.brands).sort((a,b) => b[1].revenue - a[1].revenue).forEach(([bn, d]) => {
         bHtml += `<tr class="hover:bg-slate-50 bg-white"><td class="py-2 px-4 text-left">${bn}</td><td class="py-2 px-4 text-left font-medium">${d.advertiser}</td><td class="py-2 px-4 font-mono font-bold text-amber-600">${d.signups}</td><td class="py-2 px-4 font-mono font-bold text-indigo-600">${d.users}</td><td class="py-2.5 px-4 font-mono font-bold text-emerald-600">$${Math.round(d.revenue).toLocaleString()}</td><td class="py-2.5 px-4 font-mono">${formatS2P(d.signups, d.users)}</td></tr>`;
       });
-      $('advertiserTableBody').innerHTML = initialTableState['advertiserTable'] = aHtml;
       $('brandTableBody').innerHTML = initialTableState['brandTable'] = bHtml;
-      ['adv','brand'].forEach(p => { setT(`${p}GrandSignups`, agg.signups); setT(`${p}GrandUsers`, agg.users); setT(`${p}GrandRevenue`, `$${Math.round(agg.revenue).toLocaleString()}`); setT(`${p}GrandS2p`, formatS2P(agg.signups, agg.users)); });
+      setT('brandGrandSignups', agg.signups); setT('brandGrandUsers', agg.users);
+      setT('brandGrandRevenue', `$${Math.round(agg.revenue).toLocaleString()}`); setT('brandGrandS2p', formatS2P(agg.signups, agg.users));
     }
 
     function initCharts() {
