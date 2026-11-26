@@ -27,6 +27,11 @@
     .esp-table tbody tr.domain-row { border-bottom: 1px solid #f1f5f9; background: #fff; }
     .esp-table tbody tr.domain-row:hover { background: #f8fafc; }
     .esp-table tfoot { border-top: 2.5px solid #485c44; background: #fff; }
+    .domains-excel-table { border-collapse: collapse !important; border: 2px solid #166534 !important; width: 100%; background: #ffffff; }
+    .domains-excel-table th, .domains-excel-table td { border: 1px solid #9cc7ab !important; }
+    .domains-excel-table tr.dom-esp-title th { background: #166534; color: #ffffff; border-bottom: 1.5px solid #14532d !important; }
+    .domains-excel-table tr.dom-col-header th { background: #dcfce7; color: #14532d; border-bottom: 1.5px solid #16a34a !important; }
+    .domains-excel-table tbody tr:hover td { background: #f0fdf4; }
     @keyframes modalPop {
       from { opacity: 0; transform: scale(0.96) translateY(8px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
@@ -248,22 +253,22 @@
 
   <!-- SENDING DOMAINS MODAL -->
   <div id="domainsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-xs" onclick="if (event.target === this) closeDomainsModal()">
-    <div class="modal-pop w-full max-w-6xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div id="domainsModalCard" class="modal-pop w-full max-w-7xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden transition-all">
       <!-- Modal Header -->
-      <div class="px-6 py-4 bg-gradient-to-r from-[#3b4c37] to-[#485c44] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+      <div class="px-6 py-4 bg-gradient-to-r from-[#14532d] to-[#166534] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
           </div>
           <div>
-            <h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">Sending Domains by ESP</h3>
-            <p id="domainsModalSubtitle" class="text-xs text-emerald-100/85">Active sending domains & subdomains</p>
+            <h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">Domains By ESP</h3>
+            <p id="domainsModalSubtitle" class="text-xs text-emerald-100/90">Active sending domains & subdomains</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <div class="relative">
-            <svg class="w-3.5 h-3.5 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-48 sm:w-56 pl-8 pr-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:bg-white/25 transition-colors">
+            <svg class="w-3.5 h-3.5 text-emerald-100 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-44 sm:w-52 pl-8 pr-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/25 text-white placeholder-emerald-100/70 focus:outline-none focus:bg-white/25 transition-colors">
           </div>
           <button type="button" onclick="closeDomainsModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors cursor-pointer" title="Close (ESC)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -272,18 +277,15 @@
       </div>
 
       <!-- ESP Filter Tabs -->
-      <div id="domainsModalTabs" class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0"></div>
+      <div id="domainsModalTabs" class="px-6 py-2.5 bg-[#f0fdf4] border-b border-emerald-200 flex items-center gap-2 overflow-x-auto shrink-0"></div>
 
       <!-- Modal Content -->
-      <div id="domainsModalBody" class="flex-1 overflow-y-auto p-6 bg-slate-50/60"></div>
+      <div id="domainsModalBody" class="flex-1 overflow-y-auto p-6 bg-slate-50/70"></div>
 
       <!-- Modal Footer -->
-      <div class="px-6 py-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
-        <div class="flex items-center gap-3">
-          <span class="inline-flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">ROOT</span> Main domain</span>
-          <span class="inline-flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">SUB</span> Subdomain</span>
-        </div>
-        <span id="domainsModalSource" class="font-medium text-slate-500">Source: Domains By ESP.xlsx</span>
+      <div class="px-6 py-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+        <span id="domainsModalSource" class="font-medium">Source: Domains By ESP.xlsx</span>
+        <span class="text-[11px] text-slate-400">Press ESC or click outside to close</span>
       </div>
     </div>
   </div>
@@ -296,6 +298,14 @@
     let globalLoadedMonths = [], areDetailsExpanded = false, isEspIpExpanded = false, cachedDetailedBreakdownRows = [];
     let chartRefs = {}, preferredJsonPathIdx = -1, preferredCsvPathIdx = -1;
     const initialTableState = {}, tableSortDirections = {}, csvCache = {};
+
+    const EXCEL_SHORT_CODE = {
+      'SEG (Sendgrid) IP 1': 'ESP: SEG',
+      'SEG (Sendgrid) IP 2 / SH': 'ESP: SEGSH',
+      'MLJ (Mailjet) IP 1': 'ESP: MLJ1',
+      'MLJ (Mailjet) IP 2': 'ESP: MLJ2',
+      'MLJ (Mailjet) IP 3 / SH': 'ESP: MLJSH'
+    };
 
     const DEFAULT_ESP_DOMAINS = {
       'SEG (Sendgrid) IP 1': ['igamingnewz.com','newz4today.com','royalzclub.com','sweepzkings.com','wannnasee.com','ac.sweepzkings.com','ad.wannnasee.com','am.royalzclub.com'],
@@ -925,38 +935,32 @@
       }
     }
 
-    function formatDomainDisplay(dom) {
-      const parts = String(dom || '').split('.');
-      if (parts.length > 2) {
-        return {
-          isSub: true,
-          html: `<span class="text-sky-600 font-semibold">${escHtml(parts[0])}.</span><span class="text-slate-800">${escHtml(parts.slice(1).join('.'))}</span>`
-        };
-      }
-      return { isSub: false, html: `<span class="text-slate-800 font-medium">${escHtml(dom)}</span>` };
-    }
-
     function renderDomainsModal() {
       const esps = getOrderedDomainEsps();
       const totalSlots = esps.reduce((a, e) => a + (espSendingDomains[e]?.length || 0), 0);
       const uniqueSet = new Set();
       esps.forEach(e => (espSendingDomains[e] || []).forEach(d => uniqueSet.add(d.toLowerCase())));
 
-      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'All Sending Domains by ESP' : activeDomainsModalEsp);
+      const card = $('domainsModalCard');
+      if (card) {
+        card.className = `modal-pop w-full ${activeDomainsModalEsp === 'ALL' ? 'max-w-7xl' : 'max-w-xl'} max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden transition-all`;
+      }
+
+      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'Domains By ESP' : activeDomainsModalEsp);
       setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL'
-        ? `${esps.length} ESPs • ${totalSlots} total assignments (${uniqueSet.size} unique domains)`
-        : `${(espSendingDomains[activeDomainsModalEsp] || []).length} active sending domains & subdomains`);
+        ? `${esps.length} ESPs • ${totalSlots} total (${uniqueSet.size} unique domains)`
+        : `${EXCEL_SHORT_CODE[activeDomainsModalEsp] || activeDomainsModalEsp} • ${(espSendingDomains[activeDomainsModalEsp] || []).length} domains`);
       setT('domainsModalSource', espDomainsLoadedFromExcel ? 'Source: Domains By ESP.xlsx (live)' : 'Source: Domains By ESP.xlsx');
 
       const tabCls = active => active
-        ? 'px-3 py-1.5 rounded-xl text-xs font-bold bg-[#485c44] text-white shadow-xs whitespace-nowrap cursor-pointer transition-all'
-        : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 whitespace-nowrap cursor-pointer transition-all';
+        ? 'px-3 py-1 rounded-xl text-xs font-bold bg-[#166534] text-white shadow-xs whitespace-nowrap cursor-pointer transition-all'
+        : 'px-3 py-1 rounded-xl text-xs font-semibold bg-white text-[#14532d] hover:bg-[#dcfce7] border border-emerald-200 whitespace-nowrap cursor-pointer transition-all';
 
-      let tabsHtml = `<button type="button" onclick="setDomainsModalTab('ALL')" class="${tabCls(activeDomainsModalEsp === 'ALL')}">All ESPs <span class="ml-1 opacity-75">(${totalSlots})</span></button>`;
+      let tabsHtml = `<button type="button" onclick="setDomainsModalTab('ALL')" class="${tabCls(activeDomainsModalEsp === 'ALL')}">All ESPs <span class="ml-1 opacity-80">(${totalSlots})</span></button>`;
       esps.forEach(e => {
-        const shortName = e.replace(' (Mailjet)', '').replace(' (Sendgrid)', '');
+        const shortName = (EXCEL_SHORT_CODE[e] || e).replace(/^ESP:\s*/i, '');
         const cnt = (espSendingDomains[e] || []).length;
-        tabsHtml += `<button type="button" data-esp="${escAttr(e)}" onclick="setDomainsModalTab(this.dataset.esp)" class="${tabCls(activeDomainsModalEsp === e)}">${escHtml(shortName)} <span class="ml-1 opacity-75">(${cnt})</span></button>`;
+        tabsHtml += `<button type="button" data-esp="${escAttr(e)}" onclick="setDomainsModalTab(this.dataset.esp)" class="${tabCls(activeDomainsModalEsp === e)}">${escHtml(shortName)} <span class="ml-1 opacity-80">(${cnt})</span></button>`;
       });
       $('domainsModalTabs').innerHTML = tabsHtml;
 
@@ -970,54 +974,53 @@
       const esps = activeDomainsModalEsp === 'ALL' ? getOrderedDomainEsps() : [activeDomainsModalEsp];
       const isSingle = activeDomainsModalEsp !== 'ALL';
 
-      const cards = [];
+      const tablesHtml = [];
       esps.forEach(esp => {
         const allDoms = espSendingDomains[esp] || [];
         const filtered = allDoms.map((d, idx) => ({ d, num: idx + 1 })).filter(x => !q || x.d.toLowerCase().includes(q));
         if (q && !filtered.length && !isSingle) return;
 
-        const subCount = allDoms.filter(d => d.split('.').length > 2).length;
-        const rootCount = allDoms.length - subCount;
+        const excelTitle = EXCEL_SHORT_CODE[esp] || `ESP: ${esp}`;
+        const rowsHtml = filtered.length
+          ? filtered.map(x => `<tr>
+              <td class="w-10 py-1.5 px-2 text-center text-xs font-semibold text-slate-700">${x.num}</td>
+              <td class="py-1.5 px-3 text-left text-xs font-medium text-slate-900">${escHtml(x.d)}</td>
+            </tr>`).join('')
+          : `<tr><td colspan="2" class="py-6 text-center text-xs text-slate-400 italic">No domains match "${escHtml(q)}"</td></tr>`;
 
-        const itemsHtml = filtered.length
-          ? filtered.map(x => {
-              const fmt = formatDomainDisplay(x.d);
-              const badge = fmt.isSub
-                ? `<span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 text-[9px] font-bold shrink-0">SUB</span>`
-                : `<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold shrink-0">ROOT</span>`;
-              return `<div class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-slate-50/80 hover:bg-[#eef2ee]/70 border border-slate-200/80 transition-colors">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="w-5 h-5 rounded-lg bg-[#485c44]/12 text-[#3b4c37] font-bold text-[10px] inline-flex items-center justify-center shrink-0">${x.num}</span>
-                  <span class="font-mono text-xs truncate" title="${escAttr(x.d)}">${fmt.html}</span>
-                </div>
-                ${badge}
-              </div>`;
-            }).join('')
-          : `<p class="text-xs text-slate-400 italic py-6 text-center col-span-full">No domains match "${escHtml(q)}"</p>`;
-
-        cards.push(`<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-          <div class="px-4 py-3 bg-[#f8faf8] border-b border-slate-200 flex items-center justify-between gap-2">
-            <div class="min-w-0">
-              <h4 class="text-xs font-extrabold text-slate-900 truncate" title="${escAttr(esp)}">${escHtml(esp)}</h4>
-              <p class="text-[11px] text-slate-500 mt-0.5">${allDoms.length} total &bull; ${rootCount} root &bull; ${subCount} sub</p>
-            </div>
-            <button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shrink-0 cursor-pointer transition-colors" title="Copy domain list">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        tablesHtml.push(`<div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-[11px] font-bold text-[#14532d] truncate" title="${escAttr(esp)}">${escHtml(esp)}</span>
+            <button type="button" data-copy-esp="${escAttr(esp)}" onclick="copyEspDomains(this)" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white hover:bg-[#dcfce7] text-[#14532d] border border-emerald-300 shrink-0 cursor-pointer transition-colors" title="Copy domains">
+              <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
               <span>Copy</span>
             </button>
           </div>
-          <div class="p-3 ${isSingle ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2' : 'space-y-1.5'}">${itemsHtml}</div>
+          <div class="overflow-hidden rounded-lg shadow-xs">
+            <table class="domains-excel-table text-sm">
+              <thead>
+                <tr class="dom-esp-title">
+                  <th colspan="2" class="py-2 px-3 text-center text-xs font-bold tracking-wide">${escHtml(excelTitle)}</th>
+                </tr>
+                <tr class="dom-col-header">
+                  <th class="w-10 py-1.5 px-2 text-center text-xs font-bold">#</th>
+                  <th class="py-1.5 px-3 text-center text-xs font-bold">Domain / Subdomain</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
         </div>`);
       });
 
-      if (!cards.length) {
+      if (!tablesHtml.length) {
         body.innerHTML = `<div class="py-12 text-center text-slate-400 text-sm">No domains match "<span class="font-semibold text-slate-600">${escHtml(q)}</span>".</div>`;
         return;
       }
 
       body.innerHTML = isSingle
-        ? `<div class="max-w-4xl mx-auto">${cards.join('')}</div>`
-        : `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">${cards.join('')}</div>`;
+        ? `<div class="max-w-sm mx-auto">${tablesHtml.join('')}</div>`
+        : `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">${tablesHtml.join('')}</div>`;
     }
 
     function renderEspTable(list, agg) {
@@ -1035,7 +1038,7 @@
           ? `<div class="inline-flex items-center justify-end gap-2">
                <span class="font-bold text-slate-800">${sendingDoms.length}</span>
                <button type="button" data-esp="${escAttr(i.esp)}" onclick="openDomainsModal(this.dataset.esp)" title="View ${sendingDoms.length} domains for ${escAttr(i.esp)}"
-                 class="w-5 h-5 rounded-full bg-[#eef2ee] hover:bg-[#485c44] text-[#3b4c37] hover:text-white border border-[#cbd5cb] hover:border-[#485c44] inline-flex items-center justify-center transition-all shadow-2xs cursor-pointer">
+                 class="w-5 h-5 rounded-full bg-[#dcfce7] hover:bg-[#166534] text-[#14532d] hover:text-white border border-[#86efac] hover:border-[#166534] inline-flex items-center justify-center transition-all shadow-2xs cursor-pointer">
                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m-7-7h14"></path></svg>
                </button>
              </div>`
@@ -1055,7 +1058,7 @@
              <span class="font-bold text-slate-900">${totalDomainSlots}</span>
              <span class="text-[11px] font-medium text-slate-400">(${uniqueDomains.size} uniq.)</span>
              <button type="button" onclick="openDomainsModal('ALL')" title="View all ${totalDomainSlots} domains (${uniqueDomains.size} unique)"
-               class="w-5 h-5 rounded-full bg-[#485c44] hover:bg-[#3b4c37] text-white inline-flex items-center justify-center transition-all shadow-xs cursor-pointer">
+               class="w-5 h-5 rounded-full bg-[#166534] hover:bg-[#14532d] text-white inline-flex items-center justify-center transition-all shadow-xs cursor-pointer">
                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14m-7-7h14"></path></svg>
              </button>
            </div>`
