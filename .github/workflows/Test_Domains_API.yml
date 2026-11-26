@@ -1,0 +1,48 @@
+name: Test_Domains_API
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Probar SendGrid y Mailjet por dominio
+        env:
+          SG_KEY_1: ${{ secrets.SG_KEY_1 }}
+          SG_KEY_2: ${{ secrets.SG_KEY_2 }}
+          MJ_KEY_1: ${{ secrets.MJ_KEY_1 }}
+          MJ_SECRET_1: ${{ secrets.MJ_SECRET_1 }}
+        run: |
+          node -e '
+          async function testSG(name, key) {
+            if (!key) return console.log(name, "sin key");
+            const h = { Authorization: "Bearer " + key };
+            const r1 = await fetch("https://api.sendgrid.com/v3/categories?limit=50", { headers: h });
+            const d1 = await r1.json().catch(() => ({}));
+            console.log(name, "Categories HTTP:", r1.status, "| Muestra:", JSON.stringify(Array.isArray(d1) ? d1.slice(0, 10) : d1));
+
+            const r2 = await fetch("https://api.sendgrid.com/v3/messages?limit=3", { headers: h });
+            const d2 = await r2.json().catch(() => ({}));
+            console.log(name, "Email Activity (/v3/messages) HTTP:", r2.status, r2.ok ? "| SI TIENE ACCESO!" : "| No disponible (" + JSON.stringify(d2) + ")");
+
+            const r3 = await fetch("https://api.sendgrid.com/v3/marketing/singlesends?page_size=5", { headers: h });
+            const d3 = await r3.json().catch(() => ({}));
+            console.log(name, "SingleSends HTTP:", r3.status, "| Total:", d3.result ? d3.result.length : JSON.stringify(d3));
+          }
+          async function testMJ(name, k, s) {
+            if (!k || !s) return console.log(name, "sin keys");
+            const h = { Authorization: "Basic " + Buffer.from(k + ":" + s).toString("base64") };
+            const r = await fetch("https://api.mailjet.com/v3/REST/sender?Limit=50", { headers: h });
+            const d = await r.json().catch(() => ({}));
+            const list = (d.Data || []).map(x => ({ id: x.ID, email: x.Email, status: x.Status }));
+            console.log(name, "Senders HTTP:", r.status, "| Cantidad:", list.length, "| Muestra:", JSON.stringify(list.slice(0, 8)));
+          }
+          (async () => {
+            await testSG("SEG1", process.env.SG_KEY_1);
+            await testSG("SEG2", process.env.SG_KEY_2);
+            await testMJ("MLJ1", process.env.MJ_KEY_1, process.env.MJ_SECRET_1);
+          })();
+          '
