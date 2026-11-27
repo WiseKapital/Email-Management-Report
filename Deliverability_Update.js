@@ -133,13 +133,20 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
         return Number.isNaN(t) || (t >= fromMs && t <= toMs);
     };
 
-    // 0) Mapa SenderID -> dominio/subdominio remitente
+    const porISP = nuevoMapaISPs();
+    const porDominio = {};
+
+    // 0) Mapa SenderID -> dominio/subdominio remitente (siembra todos los activos con 0)
     const senderMap = {};
     try {
         const senders = await fetchAllMailjet('https://api.mailjet.com/v3/REST/sender', headers);
         for (const s of senders) {
             if (s.ID != null && s.Email) {
-                senderMap[String(s.ID)] = extraerDominioEmail(s.Email);
+                const dom = extraerDominioEmail(s.Email);
+                senderMap[String(s.ID)] = dom;
+                if ((!s.Status || String(s.Status).toLowerCase() === 'active') && dom && dom !== 'Unknown') {
+                    if (!porDominio[dom]) porDominio[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+                }
             }
         }
     } catch (e) {
@@ -174,9 +181,6 @@ async function procesarMailjet(nombreCuenta, apiKey, secretKey, fechaStr) {
     } catch (e) {
         console.warn(`${nombreCuenta} aviso clickstatistics (${e.message}) -> usando Status del mensaje`);
     }
-
-    const porISP = nuevoMapaISPs();
-    const porDominio = {};
 
     for (const msg of mensajes) {
         if (msg.ArrivedAt && !enAyer(msg.ArrivedAt)) continue;
@@ -288,6 +292,44 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     const toMs = Date.UTC(y, m - 1, d + 1, 4, 59, 59, 999);
     const fromSec = Math.floor(fromMs / 1000);
     const toSec = Math.floor(toMs / 1000);
+
+    const porDominio = {};
+    const asegurarDom = (dom) => {
+        if (!dom || dom === 'Unknown') return null;
+        if (!porDominio[dom]) {
+            porDominio[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+        }
+        return porDominio[dom];
+    };
+
+    // 0) Sembrar dominios autenticados y remitentes configurados (incluye los de 0 envíos)
+    try {
+        const [rWl, rVs, rMs] = await Promise.all([
+            fetch('https://api.sendgrid.com/v3/whitelabel/domains?limit=500', { headers, signal: AbortSignal.timeout(15000) }).catch(() => null),
+            fetch('https://api.sendgrid.com/v3/verified_senders?limit=500', { headers, signal: AbortSignal.timeout(15000) }).catch(() => null),
+            fetch('https://api.sendgrid.com/v3/marketing/senders', { headers, signal: AbortSignal.timeout(15000) }).catch(() => null)
+        ]);
+        if (rWl && rWl.ok) {
+            const wl = await rWl.json().catch(() => []);
+            for (const item of (Array.isArray(wl) ? wl : [])) {
+                if (item.domain) asegurarDom(String(item.domain).trim().toLowerCase());
+            }
+        }
+        if (rVs && rVs.ok) {
+            const vs = await rVs.json().catch(() => ({}));
+            for (const item of (Array.isArray(vs.results) ? vs.results : [])) {
+                if (item.from_email) asegurarDom(extraerDominioEmail(item.from_email));
+            }
+        }
+        if (rMs && rMs.ok) {
+            const ms = await rMs.json().catch(() => []);
+            const arr = Array.isArray(ms) ? ms : (Array.isArray(ms.results) ? ms.results : []);
+            for (const item of arr) {
+                const em = item.from?.email || item.from_email;
+                if (em) asegurarDom(extraerDominioEmail(em));
+            }
+        }
+    } catch {}
 
     // 1) Bounces y Blocks del día (sin límite estricto de 6 req/min)
     async function fetchSuppresions(endpoint) {
@@ -406,19 +448,11 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     }
     console.log(`${nombreCuenta} mensajes recuperados por actividad: ${msgMap.size}`);
 
-    const porDominio = {};
     const unresolved = [];
-
-    const asegurarDom = (dom) => {
-        if (!porDominio[dom]) {
-            porDominio[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
-        }
-        return porDominio[dom];
-    };
 
     for (const msg of msgMap.values()) {
         const dom = extraerDominioEmail(msg.from_email);
-        const dRow = asegurarDom(dom);
+        const dRow = asegurarDom(dom) || (porDominio.Unknown = porDominio.Unknown || { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 });
         const st = String(msg.status || '').toLowerCase();
 
         if (st === 'delivered') {
@@ -430,7 +464,7 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
             } else if (blockedEmails.has(toEm)) {
                 dRow.SoftBounce += 1;
             } else {
-                unresolved.push({ msgId: msg.msg_id, dom });
+                unresolved.push({ msgId: msg.msg_id, dom: dom || 'Unknown' });
             }
         }
 
@@ -441,7 +475,7 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
     // Resolver eventuales not_delivered que no aparecieron en suppression lists (máx 15 consultas)
     for (let i = 0; i < unresolved.length; i++) {
         const { msgId, dom } = unresolved[i];
-        const dRow = asegurarDom(dom);
+        const dRow = porDominio[dom] || (porDominio[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 });
         if (i < 15 && msgId) {
             try {
                 const detail = await sgActivityFetch(`https://api.sendgrid.com/v3/messages/${encodeURIComponent(msgId)}`);
@@ -632,6 +666,13 @@ async function main() {
             : Promise.resolve({})
     ]);
 
+    let baseDomJson = {};
+    try {
+        if (fs.existsSync('Domains By ESP.json')) {
+            baseDomJson = JSON.parse(fs.readFileSync('Domains By ESP.json', 'utf8')) || {};
+        }
+    } catch {}
+
     const lineasBd = [];
     lineasBd.push('ESP/Domain,VOLUME,Delivered,Soft Bounce,Hard Bounce,Opened,Clicks');
 
@@ -644,6 +685,12 @@ async function main() {
     ];
 
     for (const blk of bloquesBreakdown) {
+        for (const d of (Array.isArray(baseDomJson[blk.nombre]) ? baseDomJson[blk.nombre] : [])) {
+            const dom = String(d || '').trim().toLowerCase();
+            if (dom && !blk.dominios[dom]) {
+                blk.dominios[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
+            }
+        }
         const tot = sumarBloqueDominios(blk.dominios);
         lineasBd.push(filaBreakdownCSV(blk.nombre, tot));
         const domEntries = Object.entries(blk.dominios || {}).sort((a, b) => {
