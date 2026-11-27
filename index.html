@@ -146,7 +146,7 @@
   <div id="domainsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-xs" onclick="if(event.target===this)closeDomainsModal()">
     <div id="domainsModalCard" class="modal-pop w-full max-w-6xl max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
       <div class="px-6 py-4 bg-gradient-to-r from-[#14532d] to-[#166534] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div><h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">Domains By ESP</h3><p id="domainsModalSubtitle" class="text-xs text-emerald-100/90">Deliverability & engagement by sending domain / subdomain</p></div>
+        <div><h3 id="domainsModalTitle" class="text-base font-bold tracking-tight">ESP / IP Breakdown</h3><p id="domainsModalSubtitle" class="text-xs text-emerald-100/90">Deliverability & engagement by sending domain / subdomain</p></div>
         <div class="flex flex-wrap items-center gap-2"><input id="domainsModalSearch" type="text" oninput="renderDomainsModalBody()" placeholder="Search domain..." class="w-44 sm:w-56 px-3 py-1.5 rounded-xl text-xs bg-white/15 border border-white/25 text-white placeholder-emerald-100/70 focus:outline-none focus:bg-white/25"><button type="button" onclick="closeDomainsModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold cursor-pointer" title="Close (ESC)">✕</button></div>
       </div>
       <div id="domainsModalTabs" class="px-6 py-2.5 bg-[#f0fdf4] border-b border-emerald-200 flex items-center gap-2 overflow-x-auto shrink-0"></div>
@@ -540,7 +540,7 @@
       const esps = getOrderedDomainEsps(), uniq = new Set(), total = esps.reduce((a, e) => a + Object.keys(espDomainStats[e] || {}).length, 0);
       esps.forEach(e => Object.keys(espDomainStats[e] || {}).forEach(d => uniq.add(d.toLowerCase())));
       $('domainsModalCard').className = `modal-pop w-full ${activeDomainsModalEsp === 'ALL' ? 'max-w-6xl' : 'max-w-4xl'} max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden`;
-      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'Domains By ESP' : activeDomainsModalEsp);
+      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'ESP / IP Breakdown' : activeDomainsModalEsp);
       setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL' ? `${esps.length} ESPs • ${total} total (${uniq.size} unique) • ${currentStartDate} to ${currentEndDate}` : `${EXCEL_SHORT_CODE[activeDomainsModalEsp] || activeDomainsModalEsp} • ${Object.keys(espDomainStats[activeDomainsModalEsp]||{}).length} domains • ${currentStartDate} to ${currentEndDate}`);
       setT('domainsModalSource', `Source: ESP - IP Breakdown CSVs (${bdDays.found} of ${bdDays.total} days)`);
       const tc = a => a ? 'px-3 py-1 rounded-xl text-xs font-bold bg-[#166534] text-white whitespace-nowrap cursor-pointer' : 'px-3 py-1 rounded-xl text-xs font-semibold bg-white text-[#14532d] hover:bg-[#dcfce7] border border-emerald-200 whitespace-nowrap cursor-pointer';
