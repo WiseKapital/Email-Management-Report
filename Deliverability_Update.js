@@ -302,7 +302,7 @@ async function procesarSendgridDominios(nombreCuenta, apiKey, fechaStr) {
         return porDominio[dom];
     };
 
-    // 0) Sembrar dominios autenticados y remitentes configurados (incluye los de 0 envíos)
+    // 0) Sembrar dominios autenticados y remitentes configurados en SendGrid (incluye los de 0 envíos)
     try {
         const [rWl, rVs, rMs] = await Promise.all([
             fetch('https://api.sendgrid.com/v3/whitelabel/domains?limit=500', { headers, signal: AbortSignal.timeout(15000) }).catch(() => null),
@@ -666,13 +666,6 @@ async function main() {
             : Promise.resolve({})
     ]);
 
-    let baseDomJson = {};
-    try {
-        if (fs.existsSync('Domains By ESP.json')) {
-            baseDomJson = JSON.parse(fs.readFileSync('Domains By ESP.json', 'utf8')) || {};
-        }
-    } catch {}
-
     const lineasBd = [];
     lineasBd.push('ESP/Domain,VOLUME,Delivered,Soft Bounce,Hard Bounce,Opened,Clicks');
 
@@ -685,12 +678,6 @@ async function main() {
     ];
 
     for (const blk of bloquesBreakdown) {
-        for (const d of (Array.isArray(baseDomJson[blk.nombre]) ? baseDomJson[blk.nombre] : [])) {
-            const dom = String(d || '').trim().toLowerCase();
-            if (dom && !blk.dominios[dom]) {
-                blk.dominios[dom] = { Delivered: 0, SoftBounce: 0, HardBounce: 0, Open: 0, Click: 0 };
-            }
-        }
         const tot = sumarBloqueDominios(blk.dominios);
         lineasBd.push(filaBreakdownCSV(blk.nombre, tot));
         const domEntries = Object.entries(blk.dominios || {}).sort((a, b) => {
