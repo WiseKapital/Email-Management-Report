@@ -1,0 +1,67 @@
+name: Test_Brands_API
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Inspeccionar campañas y asuntos para Brands
+        env:
+          MJ_KEY_1: ${{ secrets.MLJ1 }}
+          MJ_SECRET_1: ${{ secrets.MLJ1_SECRET }}
+          MJ_KEY_2: ${{ secrets.MLJ2 }}
+          MJ_SECRET_2: ${{ secrets.MLJ2_SECRET }}
+          MJ_KEY_3: ${{ secrets.MLJSH }}
+          MJ_SECRET_3: ${{ secrets.MLJSH_SECRET }}
+          SG_KEY_1: ${{ secrets.SEG }}
+          SG_KEY_2: ${{ secrets.SEGSH }}
+        run: |
+          node -e '
+          const f = async (u, h) => {
+            try {
+              const r = await fetch(u, { headers: h, signal: AbortSignal.timeout(15000) });
+              const t = await r.text();
+              try { return { ok: r.ok, st: r.status, j: JSON.parse(t) }; } catch { return { ok: r.ok, st: r.status, raw: t.slice(0, 200) }; }
+            } catch (e) { return { ok: false, err: e.message }; }
+          };
+          const mj = async (name, k, s) => {
+            if (!k || !s) return;
+            const h = { Authorization: "Basic " + Buffer.from(`${k}:${s}`).toString("base64") };
+            console.log(`\n=== ${name} ===`);
+            const c = await f("https://api.mailjet.com/v3/REST/campaign?Limit=15&Sort=SendStartAt+DESC", h);
+            console.log("campaigns:", c.st, JSON.stringify((c.j?.Data || []).map(x => ({ id: x.ID, title: x.Title, subj: x.Subject, custom: x.CustomValue, at: x.SendStartAt }))));
+            const cd = await f("https://api.mailjet.com/v3/REST/campaigndraft?Limit=15", h);
+            console.log("drafts:", cd.st, JSON.stringify((cd.j?.Data || []).map(x => ({ id: x.ID, campId: x.CampaignID, title: x.Title, subj: x.Subject }))));
+            const m = await f("https://api.mailjet.com/v3/REST/message?Limit=10&ShowSubject=true", h);
+            console.log("msgs:", m.st, JSON.stringify((m.j?.Data || []).map(x => ({ campId: x.CampaignID, subj: x.Subject }))));
+          };
+          const sg = async (name, k) => {
+            if (!k) return;
+            const h = { Authorization: `Bearer ${k}` };
+            console.log(`\n=== ${name} ===`);
+            const ss = await f("https://api.sendgrid.com/v3/marketing/singlesends?page_size=20", h);
+            console.log("singlesends:", ss.st, JSON.stringify((ss.j?.result || []).map(x => ({ name: x.name, cats: x.categories, st: x.status, at: x.send_at }))));
+            const tp = await f("https://api.sendgrid.com/v3/templates?generations=legacy,dynamic&page_size=20", h);
+            console.log("templates:", tp.st, JSON.stringify((tp.j?.result || tp.j?.templates || []).map(x => ({ name: x.name, gen: x.generation }))));
+            const ms = await f("https://api.sendgrid.com/v3/messages?limit=15", h);
+            const msgs = ms.j?.messages || [];
+            console.log("msgs:", ms.st, JSON.stringify(msgs.map(x => ({ from: x.from_email, subj: x.subject, st: x.status }))));
+            if (msgs[0]?.msg_id) {
+              const d = await f(`https://api.sendgrid.com/v3/messages/${encodeURIComponent(msgs[0].msg_id)}`, h);
+              const { to_email, ...rest } = d.j || {};
+              console.log("detail:", d.st, JSON.stringify({ keys: Object.keys(rest), mcamp: rest.marketing_campaign_name, tpl: rest.template_id, cats: rest.categories, unique: rest.unique_args }));
+            }
+          };
+          (async () => {
+            await mj("MLJ1", process.env.MJ_KEY_1, process.env.MJ_SECRET_1);
+            await mj("MLJ2", process.env.MJ_KEY_2, process.env.MJ_SECRET_2);
+            await mj("MLJ_SH", process.env.MJ_KEY_3, process.env.MJ_SECRET_3);
+            await sg("SEG1", process.env.SG_KEY_1);
+            await sg("SEG2", process.env.SG_KEY_2);
+          })();
+          '
