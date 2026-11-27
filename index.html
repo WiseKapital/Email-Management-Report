@@ -540,7 +540,7 @@
       const esps = getOrderedDomainEsps(), uniq = new Set(), total = esps.reduce((a, e) => a + Object.keys(espDomainStats[e] || {}).length, 0);
       esps.forEach(e => Object.keys(espDomainStats[e] || {}).forEach(d => uniq.add(d.toLowerCase())));
       $('domainsModalCard').className = `modal-pop w-full ${activeDomainsModalEsp === 'ALL' ? 'max-w-6xl' : 'max-w-4xl'} max-h-[88vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden`;
-      setT('domainsModalTitle', activeDomainsModalEsp === 'ALL' ? 'ESP / IP Breakdown' : activeDomainsModalEsp);
+      setT('domainsModalTitle', 'ESP / IP Breakdown');
       setT('domainsModalSubtitle', activeDomainsModalEsp === 'ALL' ? `${esps.length} ESPs • ${total} total (${uniq.size} unique) • ${currentStartDate} to ${currentEndDate}` : `${EXCEL_SHORT_CODE[activeDomainsModalEsp] || activeDomainsModalEsp} • ${Object.keys(espDomainStats[activeDomainsModalEsp]||{}).length} domains • ${currentStartDate} to ${currentEndDate}`);
       setT('domainsModalSource', `Source: ESP - IP Breakdown CSVs (${bdDays.found} of ${bdDays.total} days)`);
       const tc = a => a ? 'px-3 py-1 rounded-xl text-xs font-bold bg-[#166534] text-white whitespace-nowrap cursor-pointer' : 'px-3 py-1 rounded-xl text-xs font-semibold bg-white text-[#14532d] hover:bg-[#dcfce7] border border-emerald-200 whitespace-nowrap cursor-pointer';
